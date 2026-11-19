@@ -198,7 +198,8 @@ function ns.UI.VirtualList(parent, rowHeight, numRows, build, update)
     bar:EnableMouse(true)
     bar:SetOrientation("VERTICAL")
     bar:SetValueStep(1)
-    bar:SetObeyStepOnDrag(true)
+-- (the 3.3.5 slider has no SetObeyStepOnDrag: retail-only)
+    if bar.SetObeyStepOnDrag then bar:SetObeyStepOnDrag(true) end
     bar:SetMinMaxValues(0, 0)
     bar:SetValue(0)
 

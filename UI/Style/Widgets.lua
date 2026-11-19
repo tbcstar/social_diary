@@ -729,7 +729,8 @@ function Style.Slider(parent, width, spec, get, set)
     slider:EnableMouse(true)
     slider:SetMinMaxValues(min, max)
     slider:SetValueStep(step)
-    slider:SetObeyStepOnDrag(true)
+-- (the 3.3.5 slider has no SetObeyStepOnDrag: retail-only)
+    if slider.SetObeyStepOnDrag then slider:SetObeyStepOnDrag(true) end
 
     -- The nib's centre stops half the thumb short of each end, so the line
     -- and the ticks do too. The thumb is clear, with the nib on it.
