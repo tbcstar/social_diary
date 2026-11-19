@@ -20,6 +20,7 @@ Core\Addon.lua
 Core\Compat\Env.lua
 Core\Compat\Extras.lua
 Core\Compat\Textures.lua
+Core\Compat\Widgets.lua
 Core\Compat\Map.lua
 Core\Compat\Items.lua
 Core\Compat\Quests.lua

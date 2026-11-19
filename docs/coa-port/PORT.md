@@ -75,6 +75,11 @@
    做法：`CreateFrame` 时给名字；模板自带、我们又不参与的那套处理器一律 `SetScript("OnShow", nil)`
    （`UI/Blizzard/SocialTab.lua`，测试见 `tests/socialtab.lua`）。
 
+13. **缺失的控件方法在 `Core/Compat/Widgets.lua` 一次性补齐，不要在几十个调用点各加 guard**。探针（`sd_probe`，345 个名字 × 16 种控件）查出本客户端**全部 16 种控件上都没有**的 23 个方法：
+   `AddMaskTexture、CreateMaskTexture、EnableGamePadButton/Stick、GetFontObjectForAlphabet、GetOpenMenu、GetRotation、GetUnboundedStringWidth、IsGamePadButtonEnabled/StickEnabled、IsMouseClickEnabled、IsTruncated、RegisterCallback、SetClipsChildren、SetDesaturation、SetFixedFrameStrata、SetMaxLines、SetMouseClickEnabled、SetObeyStepOnDrag、SetPropagateKeyboardInput、SetSnapToPixelGrid、SetTexelSnappingBias、SetVertexOffset`。
+   做法与 `Textures.lua` 的 `SetColorTexture` 相同：`getmetatable(widget).__index` 是该类控件的共享方法表，逐个**只在缺失时**填（成员级，绝不覆盖客户端自带的）；`SetDesaturation` 走 `SetDesaturated`，`GetUnboundedStringWidth` 退回 `GetStringWidth`，其余是 no-op / `false` / `nil`。真机 19 Nov 2026 的崩溃 `UI/Kit/List.lua:362: attempt to call method 'SetClipsChildren' (a nil value)` 就是它修的。
+   **不要**补 `CreateMaskTexture`/`AddMaskTexture`（假 mask 会印错图，调用点本来就先问 `if x.CreateMaskTexture then`，见 `UI/Map/Dungeon.lua:203`）和 `EventRegistry:RegisterCallback`（不是控件方法，`UI/Windows/Reunion/Placing.lua:94` 自带 guard）。测试见 `tests/widgets.lua`。
+
 ## 3. 兼容层契约（`Core/Compat/`，owner: core-port）
 
 每个文件在 TOC 里紧跟 `Core/Addon.lua` 之后、`Locales/` 之前加载。**按成员补齐，不做整表 guard**（硬性规则 9）：
@@ -89,6 +94,7 @@
 | `Core/Compat/Quests.lua` | `C_QuestLog`、`C_Spell` | `IsQuestFlaggedCompleted`(3.3.5 有)、`GetQuestLink`、`GetSpellInfo`/`GetSpellLink`/`IsSpellKnown` |
 | `Core/Compat/Units.lua` | `C_UnitAuras`、`C_PlayerInfo`、`C_PartyInfo`、`C_Friend`、`GetSpecialization`/`GetSpecializationInfo` | `UnitAura(unit,i,filter)` → 表；`GetPlayerInfoByGUID`；`GetNumSubgroupMembers`；`GetTalentTabInfo` |
 | `Core/Compat/PvP.lua` | `C_PvP` | `GetBattlefieldScore`/`GetBattlefieldStatData`/`GetNumBattlefieldScores` |
+| `Core/Compat/Widgets.lua` | `Frame/Texture/FontString/Button/...` 的 retail 专有方法（见硬性规则 13）：real 缺失的补 no-op 或 3.3.5 等价物 | 空实现/`SetDesaturated`/`GetStringWidth` |
 | `Core/Compat/Textures.lua` | `Texture:SetColorTexture`、`C_Texture`、`SetAtlas` | `SetTexture(r,g,b,a)`；atlas → 3.3.5 贴图路径或 nil（调用方必须能接受 nil） |
 | `Core/Compat/Settings.lua` | `Settings` | 注册表 + 打开插件自己的设置页（`UI/Settings/Page.lua`），并在 3.3.5 的 Interface Options 里加一个入口 |
 

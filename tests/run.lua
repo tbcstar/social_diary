@@ -79,6 +79,7 @@ local FILES = {
     "diary_scale",
     "minimap",
     "socialtab",
+    "widgets",
     "sightings",
     "timeline",
     "person_plate",
