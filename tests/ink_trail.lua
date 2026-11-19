@@ -12,6 +12,8 @@ local ns = T.Boot()
 local Ink = ns.UI.InkTrail
 local Pen = ns.UI.Pen
 local POOL, FOOT, CAP, LAYER = Ink.POOL, Ink.FOOT, Ink.CAP, Ink.LAYER
+-- What a texture was last painted, either form of gradient (wowmock's Paint).
+local Paint = T.mock.Paint
 
 -- A 500 x 340 map, as if the whole of it were on the sheet.
 local box = { at = function(x, y) return x * 500, y * 340 end, fullW = 500, fullH = 340, pxPerYard = 0.1 }
@@ -811,7 +813,8 @@ do
     Check(S[1] + S[2] + S[3] > P[1] + P[2] + P[3] + 0.2 and S[1] < 0.93 and S[3] < S[1] - 0.15,
         "the card is not an aged stock, lighter than the page and warm")
     for _, band in ipairs(soft) do
-        Check(band.bent and band.recorded.calls.SetGradient, "a shadow band is not a gradient on its corners")
+        Check(band.bent and select(4, Paint(band)) == "gradient",
+            "a shadow band is not a gradient on its corners")
     end
     Check(plate.reach and plate.reach.lifted > plate.reach.glued + 3,
         "the lifted corner's shadow does not reach further than the glued card's")
@@ -886,7 +889,8 @@ do
     Check(strip.shadow:IsShown() and strip.soft[1]:IsShown() and strip.soft[2]:IsShown(),
         "a strip throws no shadow")
     for _, band in ipairs(strip.soft) do
-        Check(band.bent and band.recorded.calls.SetGradient, "a strip's shadow band is not a gradient on its corners")
+        Check(band.bent and select(4, Paint(band)) == "gradient",
+            "a strip's shadow band is not a gradient on its corners")
     end
     Check(strip.paper.bent, "a strip is cut square")
     Check(strip.tape:IsShown() and strip.tapeEdges[1]:IsShown() and strip.tapeEdges[2]:IsShown(),

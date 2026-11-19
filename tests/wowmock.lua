@@ -165,7 +165,7 @@ local NOOPS = {
     "SetWordWrap", "SetMaxLines", "EnableMouseWheel",
     "SetOrientation", "SetValueStep", "SetObeyStepOnDrag", "SetThumbTexture",
     "SetNumeric", "SetSpacing", "SetClipsChildren", "SetBlendMode", "SetScale",
-    "SetShadowOffset", "SetShadowColor", "SetGradient", "SetDesaturated",
+    "SetShadowOffset", "SetShadowColor", "SetGradient", "SetGradientAlpha", "SetDesaturated",
     "SetAtlas", "AddMaskTexture", "SetRotation", "SetHitRectInsets",
     "SetFixedFrameStrata", "SetFixedFrameLevel", "SetSnapToPixelGrid", "SetTexelSnappingBias", "SetVertexOffset",
     "SetPassThroughButtons", "EnableKeyboard", "SetPropagateKeyboardInput", "SetHyperlinksEnabled", "SetFixedFrameStrata",
@@ -200,6 +200,29 @@ for i = 1, #NOOPS do
             self.recorded.calls[method] = args
         end
     end
+end
+
+-- What a texture was last painted, whichever form the client takes it in
+-- (Style.Gradient in UI/Style/Draw.lua): its gradient's two ends as
+-- { r, g, b, a } each, the orientation, and "gradient"; or its flat colour
+-- as both ends, nil orientation, and "flat". Nothing painted, nothing back.
+function M.Paint(w)
+    local calls = w.recorded.calls
+    local gradient, fade = calls.SetGradient, calls.SetGradientAlpha
+    local ends = gradient
+    if fade and (not ends or fade.seq > ends.seq) then ends = fade end
+    local flat = calls.SetColorTexture
+    if flat and (not ends or flat.seq > ends.seq) then
+        local f = { r = flat[1], g = flat[2], b = flat[3], a = flat[4] or 1 }
+        return f, f, nil, "flat"
+    end
+    if not ends then return end
+    if ends == fade then
+        return { r = fade[2], g = fade[3], b = fade[4], a = fade[5] or 1 },
+            { r = fade[6], g = fade[7], b = fade[8], a = fade[9] or 1 }, fade[1], "gradient"
+    end
+    return { r = gradient[2], g = gradient[3], b = gradient[4], a = 1 },
+        { r = gradient[5], g = gradient[6], b = gradient[7], a = 1 }, gradient[1], "gradient"
 end
 
 local function NewWidget(frameType, name, parent, template)

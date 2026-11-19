@@ -632,12 +632,10 @@ function ns.UI.LooseSheet(parent, W, H, opts)
         local texture = grimePool:Next()
         GrimeCrop(texture, x1 - x0, y1 - y0, n)
         local a = math.min(0.6, GRUNGE.alpha * worn * (1 - GRUNGE.uneven * Style.Noise(n + 0.25)))
-        local clear, dark = CreateColor(T[1], T[2], T[3], 0), CreateColor(T[1], T[2], T[3], a)
-        local ok = pcall(texture.SetGradient, texture, orientation, atEnd and clear or dark, atEnd and dark or clear)
-        if not ok then
-            texture:SetVertexColor(T[1], T[2], T[3])
-            texture:SetAlpha(a / 2)
-        end
+        -- Clear where it meets the fold, `a` away from it (or the other way
+        -- when `atEnd`), over its crop of the grime art.
+        Style.Gradient(texture, orientation, { T[1], T[2], T[3], atEnd and 0 or a },
+            { T[1], T[2], T[3], atEnd and a or 0 }, true)
         Bend(texture, x0, y0, x1, y1)
     end
 

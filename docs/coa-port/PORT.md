@@ -79,7 +79,7 @@
    `AddMaskTexture、CreateMaskTexture、EnableGamePadButton/Stick、GetFontObjectForAlphabet、GetOpenMenu、GetRotation、GetUnboundedStringWidth、IsGamePadButtonEnabled/StickEnabled、IsMouseClickEnabled、IsTruncated、RegisterCallback、SetClipsChildren、SetDesaturation、SetFixedFrameStrata、SetMaxLines、SetMouseClickEnabled、SetObeyStepOnDrag、SetPropagateKeyboardInput、SetSnapToPixelGrid、SetTexelSnappingBias、SetVertexOffset`。
    做法与 `Textures.lua` 的 `SetColorTexture` 相同：`getmetatable(widget).__index` 是该类控件的共享方法表，逐个**只在缺失时**填（成员级，绝不覆盖客户端自带的）；`SetDesaturation` 走 `SetDesaturated`，`GetUnboundedStringWidth` 退回 `GetStringWidth`，其余是 no-op / `false` / `nil`。真机 19 Nov 2026 的崩溃 `UI/Kit/List.lua:362: attempt to call method 'SetClipsChildren' (a nil value)` 就是它修的。
    **不要**补 `CreateMaskTexture`/`AddMaskTexture`（假 mask 会印错图，调用点本来就先问 `if x.CreateMaskTexture then`，见 `UI/Map/Dungeon.lua:203`）、`EventRegistry:RegisterCallback`（不是控件方法，`UI/Windows/Reunion/Placing.lua:94` 自带 guard），**尤其不要补 `SetVertexOffset`**。
-   `SetVertexOffset` 不是普通的"缺失方法"而是**能力判据**：`UI/Style/Draw.lua:158` 的 `Style.Quad` 先问 `if not texture.SetVertexOffset then return false end`，问不到就返回 false，让调用方走"画平 / 隐藏"的降级分支；补成 no-op 后它**谎报成功**，每条笔迹、纸边、三角都被画成自己的**轴对齐外接矩形**（真机 19 Nov 2026：日记书页变成一片实心米黄与黑色色块；同形判据见 `UI/Paper/Surface.lua:73-94`、`UI/Paper/Sheet.lua:471` 与 `:505`、`UI/Paper/Strip.lua:339`、`Features/Witnesses/Card.lua:591`）。教训：补任何一个方法之前，先查它有没有被 `if x.M then` 当成能力判断用。测试见 `tests/widgets.lua`（断言 `SHIMS.SetVertexOffset == nil`、且 `Style.Quad` 在补过方法的控件上返回 false）。
+   `SetVertexOffset` 不是普通的"缺失方法"而是**能力判据**：`UI/Style/Draw.lua:197` 的 `Style.Quad` 先问 `if not texture.SetVertexOffset then return false end`，问不到就返回 false，让调用方走"画平 / 隐藏"的降级分支；补成 no-op 后它**谎报成功**，每条笔迹、纸边、三角都被画成自己的**轴对齐外接矩形**（真机 19 Nov 2026：日记书页变成一片实心米黄与黑色色块；同形判据见 `UI/Paper/Surface.lua:73-94`、`UI/Paper/Sheet.lua:471` 与 `:505`、`UI/Paper/Strip.lua:339`、`Features/Witnesses/Card.lua:591`）。教训：补任何一个方法之前，先查它有没有被 `if x.M then` 当成能力判断用。测试见 `tests/widgets.lua`（断言 `SHIMS.SetVertexOffset == nil`、且 `Style.Quad` 在补过方法的控件上返回 false）。
 
 14. **不是控件"方法"缺失，而是控件没有那个"脚本槽"**：3.3.5 的普通 Frame 上**没有** `OnHyperlinkClick` /
     `OnHyperlinkEnter` / `OnHyperlinkLeave`，`SetScript` 用这三个名字会抛
@@ -89,6 +89,18 @@
     `SetScript`，结论缓存；没有就**不给控件设这三个脚本，文本里也别写 `|H...|h` 标记**（客户端会当原文读出来），
     名字改用纯色 `|cff<hex>名字|r`（`UI/Journey/Left.lua` 的 `TakesLinks` / `LinkScript` / `PLAIN`，测试见
     `tests/links.lua`，它用一个拒绝超链接脚本的假客户端复现崩溃）。
+
+15. **同一个函数在不同客户端版本上形态不同时，用一次探测定形态，别照抄 retail 的参数类型**：本客户端的
+    `SetGradient` 收**6 个数字**（它自己的 `FrameXML/CompactUnitFrame.lua:1665` 就这么调），带 alpha 的渐变走
+    `SetGradientAlpha` 的**8 个数字**（`SharedXML/SharedPanelTemplates.lua:1346`、装上就有的 DragonUI
+    `modules/hp_low_alert.lua:61-64`）；retail 收两个 `CreateColor` 对象。上游按 retail 传对象给数字形参，
+    C 层把表当 **0** 吞掉、`pcall` 照样返回 true，于是整条渐变变成纯黑，**没有任何报错** —— 真机 19 Nov 2026
+    空日记右页那条"黑底纸片"（`UI/Journal/Empty.lua` 的 light 纸片）就是这么来的。做法：能力判断集中一处，
+    `UI/Style/Draw.lua` 的 `Style.Gradient` 建一个自家 texture 探一次并缓存形态（numbers / colours），
+    数字客户端有 alpha 走 `SetGradientAlpha`，没有就退化到 6 数字 + 平均 alpha，最后才是平均色平涂；
+    第 5 个参数 `keepArt` 表示保留原图只染色（`UI/Paper/Light.lua` 的 `Light.Tint`、`UI/Paper/Sheet.lua` 的
+    `Grime` 都是转调它，别再各自 `pcall`）。教训：`pcall` 不报错 ≠ 调用生效，凡是"传对象 / 传数字"两种写法的
+    API，都要像规则 11 那样先确认客户端认哪种。测试见 `tests/gradient.lua`。
 
 ## 3. 兼容层契约（`Core/Compat/`，owner: core-port）
 

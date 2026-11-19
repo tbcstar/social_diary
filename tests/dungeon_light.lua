@@ -17,16 +17,9 @@ local H = Page.HEIGHT
 
 local function Near(a, b, e) return math.abs(a - b) < (e or 1e-6) end
 -- What a texture was last painted: its gradient's ends ({ r, g, b, a }
--- each), or its flat colour as both.
-local function Paint(t)
-    local c = t.recorded.calls
-    local g, flat = c.SetGradient, c.SetColorTexture
-    if g and (not flat or g.seq > flat.seq) then return g[2], g[3], g[1] end
-    if flat then
-        local f = { r = flat[1], g = flat[2], b = flat[3], a = flat[4] }
-        return f, f
-    end
-end
+-- each) and the orientation, or its flat colour as both, as the mock reads
+-- them (tests/wowmock.lua's Paint, which knows both forms of SetGradient).
+local Paint = mock.Paint
 -- Every widget made on `parent`.
 local function On(parent)
     local out = {}
@@ -136,7 +129,8 @@ local near, dark = Light.Fall(H.strip)
 Check(Near(contact[1], near) and Near(contact[3], dark), "a taped strip's shadow not from its height")
 for _, e in ipairs(map.noteStrips) do
     local strip = e.strip
-    Check(strip.sheen:IsShown() and strip.sheen.recorded.calls.SetGradient, "a strip not lit across")
+    local sheen = select(4, Paint(strip.sheen))
+    Check(strip.sheen:IsShown() and sheen == "gradient", "a strip not lit across")
     local from = Paint(strip.paper)
     Check(from and from.r < strip:Paper()[1], "a strip's paper not shaded toward its foot")
     -- Its contact shadow from its height over the sheet.
@@ -177,7 +171,7 @@ for i, t in ipairs(mark.shadows) do
 end
 local want = Page.Cast(H.bookmark, "world")
 for i = 1, #want do Check(Near(lyingAlpha[i], want[i][4]), "the bookmark's shadow not from its height") end
-Check(mark.paper.recorded.calls.SetGradient, "the bookmark's paper not lit across")
+Check(select(4, Paint(mark.paper)) == "gradient", "the bookmark's paper not lit across")
 local lyingAt = mark.shadows[CAST.layers].recorded.points[1].args[3]
 mark.scripts.OnEnter(mark)
 local liftedAt = mark.shadows[CAST.layers].recorded.points[1].args[3]

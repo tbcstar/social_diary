@@ -751,9 +751,9 @@ local function Washed(c, q, flat, what)
         local calls = part.recorded.calls
         Check(part:IsShown(), what .. ": wash " .. i .. " is hidden")
         Eq(calls.SetBlendMode and calls.SetBlendMode[1], "MOD", what .. ": wash " .. i .. " is not multiplied in")
-        local g = calls.SetGradient
-        Eq(g and g[1], "HORIZONTAL", what .. ": wash " .. i .. " does not run along the name")
-        Eq(g and (Stop(g[2]) .. ">" .. Stop(g[3])), Hex(stops[i][1]) .. ">" .. Hex(stops[i][2]),
+        local from, to, orientation = mock.Paint(part)
+        Eq(orientation, "HORIZONTAL", what .. ": wash " .. i .. " does not run along the name")
+        Eq(from and (Stop(from) .. ">" .. Stop(to)), Hex(stops[i][1]) .. ">" .. Hex(stops[i][2]),
             what .. ": wash " .. i .. "'s colours")
     end
     -- The two lengths meet where the name starts, and fill the box.

@@ -81,6 +81,7 @@ local FILES = {
     "minimap",
     "socialtab",
     "widgets",
+    "gradient",
     "sightings",
     "timeline",
     "person_plate",

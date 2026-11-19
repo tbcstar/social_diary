@@ -104,14 +104,10 @@ end
 -- A texture's colours as a gradient, from `from` ({ r, g, b, a }, the
 -- left, or the bottom for VERTICAL) to `to`, without resetting what it
 -- draws (Style.Gradient paints it white first, for a colour; this keeps
--- its art). Where SetGradient fails, the average, flat.
+-- its art). Where no gradient can be made, the average, flat. The one
+-- place that knows what the client's SetGradient takes is Style.Gradient.
 function Light.Tint(texture, orientation, from, to)
-    local ok = CreateColor and pcall(texture.SetGradient, texture, orientation,
-        CreateColor(from[1], from[2], from[3], from[4] or 1), CreateColor(to[1], to[2], to[3], to[4] or 1))
-    if not ok then
-        texture:SetVertexColor((from[1] + to[1]) / 2, (from[2] + to[2]) / 2, (from[3] + to[3]) / 2,
-            ((from[4] or 1) + (to[4] or 1)) / 2)
-    end
+    Style.Gradient(texture, orientation, from, to, true)
 end
 
 -- Something flat lit across itself (SHEEN): `base` (its stock: a colour

@@ -23,18 +23,57 @@ function Style.Disc(texture, r, g, b, a)
     return circle ~= nil
 end
 
+-- What the client's SetGradient takes, asked once on a texture of its own
+-- and kept: the 3.3.5 engine six numbers, and SetGradientAlpha eight for a
+-- fade (its own FrameXML calls both that way), or a retail client two
+-- colour objects. A call it cannot make raises, so asking is safe -- unlike
+-- guessing: a client that wants numbers takes a colour object for 0, makes
+-- the whole gradient black, and reports no error at all.
+local gradientForm
+
+local function GradientForm()
+    if gradientForm then return gradientForm end
+    local parent = UIParent or (CreateFrame and CreateFrame("Frame"))
+    local probe = parent and parent.CreateTexture and parent:CreateTexture()
+    if not (probe and probe.SetGradient) then return "colours" end
+    local numbers = pcall(probe.SetGradient, probe, "VERTICAL", 1, 1, 1, 0, 0, 0)
+    if probe.Hide then probe:Hide() end
+    gradientForm = numbers and "numbers" or "colours"
+    return gradientForm
+end
+
 -- A two-colour gradient, each colour { r, g, b, a }: `from` at the start of
--- `orientation` (left, or bottom for VERTICAL), `to` at the end. SetGradient
--- takes colour objects in current clients; where that fails, a flat wash at
--- the average is close enough.
-function Style.Gradient(texture, orientation, from, to)
-    texture:SetColorTexture(1, 1, 1, 1)
-    local ok = CreateColor and pcall(texture.SetGradient, texture, orientation,
-        CreateColor(from[1], from[2], from[3], from[4]), CreateColor(to[1], to[2], to[3], to[4]))
-    if not ok then
-        texture:SetColorTexture((from[1] + to[1]) / 2, (from[2] + to[2]) / 2, (from[3] + to[3]) / 2,
-            (from[4] + to[4]) / 2)
+-- `orientation` (left, or bottom for VERTICAL), `to` at the end. `keepArt`
+-- leaves what the texture draws alone, tinting its art (Light.Tint); else
+-- the texture becomes the colour. A fade is a real one where the client
+-- has SetGradientAlpha, else the average alpha, flat. Where no gradient can
+-- be made: a flat wash at the average. Returns whether a gradient went in.
+function Style.Gradient(texture, orientation, from, to, keepArt)
+    if not keepArt then texture:SetColorTexture(1, 1, 1, 1) end
+    local a1, a2 = from[4] or 1, to[4] or 1
+    local ok
+    if GradientForm() == "numbers" then
+        if a1 == 1 and a2 == 1 then
+            ok = pcall(texture.SetGradient, texture, orientation, from[1], from[2], from[3],
+                to[1], to[2], to[3])
+        else
+            ok = pcall(texture.SetGradientAlpha, texture, orientation, from[1], from[2], from[3], a1,
+                to[1], to[2], to[3], a2)
+            if not ok then
+                ok = pcall(texture.SetGradient, texture, orientation, from[1], from[2], from[3],
+                    to[1], to[2], to[3])
+                if ok then texture:SetAlpha((a1 + a2) / 2) end
+            end
+        end
+    elseif CreateColor then
+        ok = pcall(texture.SetGradient, texture, orientation,
+            CreateColor(from[1], from[2], from[3], a1), CreateColor(to[1], to[2], to[3], a2))
     end
+    if ok then return true end
+    local r, g, b = (from[1] + to[1]) / 2, (from[2] + to[2]) / 2, (from[3] + to[3]) / 2
+    local a = (a1 + a2) / 2
+    if keepArt then texture:SetVertexColor(r, g, b, a) else texture:SetColorTexture(r, g, b, a) end
+    return false
 end
 
 -- A soft edge in one colour: alpha `from` at the start, `to` at the end.

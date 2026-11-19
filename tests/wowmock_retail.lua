@@ -160,7 +160,7 @@ local NOOPS = {
     "SetWordWrap", "SetMaxLines", "EnableMouseWheel",
     "SetOrientation", "SetValueStep", "SetObeyStepOnDrag", "SetThumbTexture",
     "SetNumeric", "SetSpacing", "SetClipsChildren", "SetBlendMode", "SetScale",
-    "SetShadowOffset", "SetShadowColor", "SetGradient", "SetDesaturated",
+    "SetShadowOffset", "SetShadowColor", "SetGradient", "SetGradientAlpha", "SetDesaturated",
     "SetAtlas", "AddMaskTexture", "SetRotation", "SetHitRectInsets",
     "SetFixedFrameStrata", "SetFixedFrameLevel", "SetSnapToPixelGrid", "SetTexelSnappingBias", "SetVertexOffset",
     "SetPassThroughButtons", "EnableKeyboard", "SetPropagateKeyboardInput", "SetHyperlinksEnabled", "SetFixedFrameStrata",
