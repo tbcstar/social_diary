@@ -118,7 +118,7 @@ end
 Section("every feature's files load, and core names no feature")
 
 local FS = T.FS
-local toc = FS.Read(FS.Toc("."))
+local toc = FS.Read(FS.Toc(".")):gsub("\\", "/")
 local packaged = toc:match("^(.-)#@do%-not%-package@") or toc
 
 -- A feature is a folder of files: Features/<Name>/, or one level down in a

@@ -278,8 +278,10 @@ function FS.Manifest(root)
     local out = {}
     local f = assert(io.open(root .. "/" .. FS.Toc(root), "r"))
     for line in f:lines() do
-        local path = line:match("^([%w_%-/]+%.lua)%s*$")
-        if path then out[#out + 1] = path end
+        -- The 3.3.5 client resolves backslash entries only, so the TOC
+        -- spells them that way; the suite works in "/".
+        local path = line:match("^([%w_%-\\/]+%.lua)%s*$")
+        if path then out[#out + 1] = (path:gsub("\\", "/")) end
     end
     f:close()
     return out

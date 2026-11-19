@@ -427,7 +427,7 @@ Check(#stale == 0, "keys in Locales/enUS.lua the code no longer uses (run luajit
 -- against the keys the code uses.
 local LOCALES, listed = {}, {}
 for line in io.lines("social_diary.toc") do
-    local id = line:match("^Locales/(%a%a%a%a)/")
+    local id = line:gsub("\\", "/"):match("^Locales/(%a%a%a%a)/")
     if id and not listed[id] then listed[id] = true; LOCALES[#LOCALES + 1] = id end
 end
 

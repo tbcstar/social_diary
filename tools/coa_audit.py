@@ -12,7 +12,9 @@ This script reads the addon as the client will and refuses four kinds of
 mistake:
 
   R1  a retail-only name outside Core/Compat/   (PORT.md 2.2)
-  R2  a TOC that names a file that is not there, or a .lua that is not UTF-8
+  R2  a TOC that names a file that is not there, a TOC line written with "/"
+      (the client resolves only backslashes, so the line is a dead file), or a
+      .lua that is not UTF-8
   R3  a TOC directive the 3.3.5 client does not know, or a retail Interface
   R4  an L["..."] key with no zhCN word, and enUS -> zhCN coverage
   R5  a Lua escape 5.1 rejects, or a test shelling out to a Unix command
@@ -810,13 +812,25 @@ def rule_r1(tree, report, manifest, scans, native):
 
 
 def rule_r2(tree, report, toc_name, manifest):
-    """Every file the TOC names exists; every .lua is UTF-8."""
+    """Every file the TOC names exists; no line relies on "/"; every .lua is UTF-8."""
     if not toc_name:
         return
     for rel, line in manifest:
         if not os.path.exists(tree.full(rel)):
             report.error("R2", toc_name, line,
                          "the TOC names %s, which is not on disk (the client stops loading here)" % rel)
+    # 3.3.5 joins the TOC line to the addon directory without normalising it,
+    # so "Core/Addon.lua" becomes "...\social_diary\Core/Addon.lua" and the
+    # client logs "Error loading" for every line: the addon loads nothing and
+    # the seat sees only its name in the addon list. Retail accepts both.
+    for number, raw in enumerate(tree.read_text(toc_name).splitlines(), 1):
+        line = raw.strip()
+        if not line or line.startswith("#") or not line.lower().endswith((".lua", ".xml")):
+            continue
+        if "/" in line:
+            report.error("R2", toc_name, number,
+                         "the client resolves only backslash paths, so %s loads nothing; "
+                         "write %s" % (line, line.replace("/", "\\")))
     for rel in tree.lua:
         raw = tree.read_bytes(rel)
         try:

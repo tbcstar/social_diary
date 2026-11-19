@@ -122,7 +122,7 @@ local function Context()
         -- The suite drives /sd testdata and the probes. When the TOC still
         -- ships the dev block they are already in, so they are loaded here
         -- only when it does not (they must not register twice).
-        if not Files().Read(toc):find("Dev/Art.lua", 1, true) then Dev().Load(root, T.ns) end
+        if not Files().Read(toc):gsub("\\", "/"):find("Dev/Art.lua", 1, true) then Dev().Load(root, T.ns) end
         -- Menus: Core/Compat/MenuUtil builds one through EasyMenu. The
         -- suite only ever asks which entries a menu has, so the generator
         -- runs against the mock's description tree instead of a dropdown

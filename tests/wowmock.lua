@@ -1474,7 +1474,10 @@ function M.LoadAddon(root, toc)
             M.savedVariables[#M.savedVariables + 1] = name
         end
 
-        local file = line:match("^([%w_]+/[%w_/]+%.lua)%s*$")
+        -- The 3.3.5 client resolves the TOC's backslash paths and nothing
+        -- else, so the TOC spells them that way; the suite works in "/".
+        local file = line:match("^([%w_]+[\\/][%w_\\/]+%.lua)%s*$")
+        file = file and file:gsub("\\", "/")
         if file then
             -- loadfile's own message names the line of a syntax error; a
             -- generic "cannot load" would hide it.

@@ -75,7 +75,7 @@ def client_cache(*lines):
 
 # A clean port: the call stays in business code, the shim is in Core/Compat/.
 CLEAN = {
-    "addontest.toc": TOC_HEAD + "Core/Compat/Map.lua\nCore/Place.lua\nLocales/enUS.lua\nLocales/zhCN/a.lua\n",
+    "addontest.toc": TOC_HEAD + "Core\\Compat\\Map.lua\nCore\\Place.lua\nLocales\\enUS.lua\nLocales\\zhCN\\a.lua\n",
     "Core/Compat/Map.lua": "C_Map = C_Map or {}\nfunction C_Map.GetMapInfo(id) return nil end\n",
     "Core/Place.lua": "local addonName, ns = ...\nlocal info = C_Map.GetMapInfo(1412)\n"
                       "local text = ns.L[\"A day in Mulgore\"]\n",
@@ -87,7 +87,7 @@ case("clean port passes", CLEAN, [])
 # The shim is missing entirely: the call must be reported.
 missing_shim = dict(CLEAN)
 del missing_shim["Core/Compat/Map.lua"]
-missing_shim["addontest.toc"] = TOC_HEAD + "Core/Place.lua\nLocales/enUS.lua\nLocales/zhCN/a.lua\n"
+missing_shim["addontest.toc"] = TOC_HEAD + "Core\\Place.lua\nLocales\\enUS.lua\nLocales\\zhCN\\a.lua\n"
 case("retail call with no shim", missing_shim, ["R1"])
 
 # The shim exists but a second definition appears outside Core/Compat/.
@@ -102,18 +102,24 @@ case("BackdropTemplate with no mixin", template, ["R1"])
 
 # TOC names a file that is not on disk, and one file is not UTF-8.
 bad_toc = dict(CLEAN)
-bad_toc["addontest.toc"] = CLEAN["addontest.toc"] + "Core/Missing.lua\n"
+bad_toc["addontest.toc"] = CLEAN["addontest.toc"] + "Core\\Missing.lua\n"
 case("TOC names a missing file", bad_toc, ["R2"])
 
 bad_utf8 = dict(CLEAN)
 bad_utf8["Core/Place.lua"] = b"local addonName, ns = ...\n-- \xc3\x28 broken\n"
 case("not UTF-8", bad_utf8, ["R2"])
 
+# A TOC written the retail way: the 3.3.5 client joins it verbatim and every
+# line becomes a dead file, so the addon loads nothing at all.
+slash_toc = dict(CLEAN)
+slash_toc["addontest.toc"] = TOC_HEAD + "Core/Compat/Map.lua\nCore/Place.lua\nLocales/enUS.lua\nLocales/zhCN/a.lua\n"
+case("TOC entries with forward slashes", slash_toc, ["R2"])
+
 # Retail-only TOC directives and a retail Interface.
 bad_head = dict(CLEAN)
 bad_head["addontest.toc"] = ("## Interface: 16001\n## Title: Self Test\n"
                              "## LoadSavedVariablesFirst: 1\n## AddonCompartmentFunc: Foo\n"
-                             + "Core/Compat/Map.lua\nCore/Place.lua\nLocales/enUS.lua\nLocales/zhCN/a.lua\n")
+                             + "Core\\Compat\\Map.lua\nCore\\Place.lua\nLocales\\enUS.lua\nLocales\\zhCN\\a.lua\n")
 case("retail TOC directives", bad_head, ["R3"])
 
 # A key with no zhCN word.

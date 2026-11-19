@@ -133,6 +133,7 @@ local function Read(path)
 end
 local toc = assert(Read("social_diary.toc"), "no toc")
 for line in toc:gmatch("[^\r\n]+") do
+    line = line:gsub("\\", "/")
     if line:match("%.lua$") and not line:match("^#") and not line:match("^Vendor/")
         and line ~= "Core/Dungeons.lua" then
         local src = Read(line)

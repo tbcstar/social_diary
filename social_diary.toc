@@ -12,367 +12,367 @@
 ## OptionalDeps: QuestieDB, Questie
 ## X-License: GPL-3.0-or-later
 
-Core/Addon.lua
+Core\Addon.lua
 
 # Compat: the retail global names this addon was written against, rebuilt
 # on 3.3.5's API (Core/Compat/NOTES.md lists every difference). Right after
 # the namespace, before anything that could call one of them.
-Core/Compat/Env.lua
-Core/Compat/Extras.lua
-Core/Compat/Textures.lua
-Core/Compat/Map.lua
-Core/Compat/Items.lua
-Core/Compat/Quests.lua
-Core/Compat/Units.lua
-Core/Compat/PvP.lua
-Core/Compat/Settings.lua
+Core\Compat\Env.lua
+Core\Compat\Extras.lua
+Core\Compat\Textures.lua
+Core\Compat\Map.lua
+Core\Compat\Items.lua
+Core\Compat\Quests.lua
+Core\Compat\Units.lua
+Core\Compat\PvP.lua
+Core\Compat\Settings.lua
 # Translations (Locales/Locale.lua): the lookup first, the English every
 # key falls back to, then each locale's words. Before everything else, so a
 # file can take its words as it loads.
-Locales/Locale.lua
-Locales/enUS.lua
-Locales/esES/Grammar.lua
-Locales/esES/Core.lua
-Locales/esES/FeaturesA.lua
-Locales/esES/FeaturesB.lua
-Locales/esES/Words.lua
-Locales/esES/JourneyMatch.lua
-Locales/esES/Journey.lua
-Locales/esES/JournalDungeon.lua
-Locales/esES/Settings.lua
-Locales/esES/Windows.lua
-Locales/itIT/Grammar.lua
-Locales/itIT/Core.lua
-Locales/itIT/FeaturesA.lua
-Locales/itIT/FeaturesB.lua
-Locales/itIT/Words.lua
-Locales/itIT/JourneyMatch.lua
-Locales/itIT/Journey.lua
-Locales/itIT/JournalDungeon.lua
-Locales/itIT/Settings.lua
-Locales/itIT/Windows.lua
-Locales/frFR/Grammar.lua
-Locales/frFR/Core.lua
-Locales/frFR/FeaturesA.lua
-Locales/frFR/FeaturesB.lua
-Locales/frFR/Words.lua
-Locales/frFR/JourneyMatch.lua
-Locales/frFR/Journey.lua
-Locales/frFR/JournalDungeon.lua
-Locales/frFR/Settings.lua
-Locales/frFR/Windows.lua
-Locales/ruRU/Grammar.lua
-Locales/ruRU/Core.lua
-Locales/ruRU/FeaturesA.lua
-Locales/ruRU/FeaturesB.lua
-Locales/ruRU/Words.lua
-Locales/ruRU/JourneyMatch.lua
-Locales/ruRU/Journey.lua
-Locales/ruRU/JournalDungeon.lua
-Locales/ruRU/Settings.lua
-Locales/ruRU/Windows.lua
-Locales/deDE/Grammar.lua
-Locales/deDE/Words.lua
-Locales/deDE/Core.lua
-Locales/deDE/Features1.lua
-Locales/deDE/Features2.lua
-Locales/deDE/Journal.lua
-Locales/deDE/Dungeon.lua
-Locales/deDE/Journey.lua
-Locales/deDE/JourneyMatch.lua
-Locales/deDE/JourneyStory.lua
-Locales/deDE/Settings.lua
-Locales/deDE/Windows.lua
-Locales/ptBR/Grammar.lua
-Locales/ptBR/Core.lua
-Locales/ptBR/FeaturesA.lua
-Locales/ptBR/FeaturesB.lua
-Locales/ptBR/Words.lua
-Locales/ptBR/Timeline.lua
-Locales/ptBR/JourneyMatch.lua
-Locales/ptBR/Journey.lua
-Locales/ptBR/JournalDungeon.lua
-Locales/ptBR/Misc.lua
-Locales/ptBR/Settings.lua
-Locales/ptBR/Windows.lua
-Locales/zhCN/Grammar.lua
-Locales/zhCN/Core.lua
-Locales/zhCN/FeaturesA.lua
-Locales/zhCN/FeaturesB.lua
-Locales/zhCN/Words.lua
-Locales/zhCN/JourneyMatch.lua
-Locales/zhCN/Journey.lua
-Locales/zhCN/JournalDungeon.lua
-Locales/zhCN/Settings.lua
-Locales/zhCN/Windows.lua
-Locales/zhCN/CoA.lua
-Locales/zhCN/Names.lua
-Locales/zhCN/Changelog.lua
-Locales/plPL/Grammar.lua
-Locales/plPL/Core.lua
-Locales/plPL/Features.lua
-Locales/plPL/Journal.lua
-Locales/plPL/Dungeon.lua
-Locales/plPL/Journey.lua
-Locales/plPL/Battlegrounds.lua
-Locales/plPL/Settings.lua
-Locales/plPL/Windows.lua
-Locales/plPL/Words.lua
-Core/DB.lua
-Core/Bridges/Questie.lua
-Core/Identity.lua
-Core/Location.lua
-Core/Characters.lua
-Core/Heat.lua
-Core/Registry.lua
-Core/Rows.lua
-Core/Interactions.lua
-Core/Sightings.lua
-Core/Diary.lua
-Core/Notes.lua
-Core/Sessions.lua
+Locales\Locale.lua
+Locales\enUS.lua
+Locales\esES\Grammar.lua
+Locales\esES\Core.lua
+Locales\esES\FeaturesA.lua
+Locales\esES\FeaturesB.lua
+Locales\esES\Words.lua
+Locales\esES\JourneyMatch.lua
+Locales\esES\Journey.lua
+Locales\esES\JournalDungeon.lua
+Locales\esES\Settings.lua
+Locales\esES\Windows.lua
+Locales\itIT\Grammar.lua
+Locales\itIT\Core.lua
+Locales\itIT\FeaturesA.lua
+Locales\itIT\FeaturesB.lua
+Locales\itIT\Words.lua
+Locales\itIT\JourneyMatch.lua
+Locales\itIT\Journey.lua
+Locales\itIT\JournalDungeon.lua
+Locales\itIT\Settings.lua
+Locales\itIT\Windows.lua
+Locales\frFR\Grammar.lua
+Locales\frFR\Core.lua
+Locales\frFR\FeaturesA.lua
+Locales\frFR\FeaturesB.lua
+Locales\frFR\Words.lua
+Locales\frFR\JourneyMatch.lua
+Locales\frFR\Journey.lua
+Locales\frFR\JournalDungeon.lua
+Locales\frFR\Settings.lua
+Locales\frFR\Windows.lua
+Locales\ruRU\Grammar.lua
+Locales\ruRU\Core.lua
+Locales\ruRU\FeaturesA.lua
+Locales\ruRU\FeaturesB.lua
+Locales\ruRU\Words.lua
+Locales\ruRU\JourneyMatch.lua
+Locales\ruRU\Journey.lua
+Locales\ruRU\JournalDungeon.lua
+Locales\ruRU\Settings.lua
+Locales\ruRU\Windows.lua
+Locales\deDE\Grammar.lua
+Locales\deDE\Words.lua
+Locales\deDE\Core.lua
+Locales\deDE\Features1.lua
+Locales\deDE\Features2.lua
+Locales\deDE\Journal.lua
+Locales\deDE\Dungeon.lua
+Locales\deDE\Journey.lua
+Locales\deDE\JourneyMatch.lua
+Locales\deDE\JourneyStory.lua
+Locales\deDE\Settings.lua
+Locales\deDE\Windows.lua
+Locales\ptBR\Grammar.lua
+Locales\ptBR\Core.lua
+Locales\ptBR\FeaturesA.lua
+Locales\ptBR\FeaturesB.lua
+Locales\ptBR\Words.lua
+Locales\ptBR\Timeline.lua
+Locales\ptBR\JourneyMatch.lua
+Locales\ptBR\Journey.lua
+Locales\ptBR\JournalDungeon.lua
+Locales\ptBR\Misc.lua
+Locales\ptBR\Settings.lua
+Locales\ptBR\Windows.lua
+Locales\zhCN\Grammar.lua
+Locales\zhCN\Core.lua
+Locales\zhCN\FeaturesA.lua
+Locales\zhCN\FeaturesB.lua
+Locales\zhCN\Words.lua
+Locales\zhCN\JourneyMatch.lua
+Locales\zhCN\Journey.lua
+Locales\zhCN\JournalDungeon.lua
+Locales\zhCN\Settings.lua
+Locales\zhCN\Windows.lua
+Locales\zhCN\CoA.lua
+Locales\zhCN\Names.lua
+Locales\zhCN\Changelog.lua
+Locales\plPL\Grammar.lua
+Locales\plPL\Core.lua
+Locales\plPL\Features.lua
+Locales\plPL\Journal.lua
+Locales\plPL\Dungeon.lua
+Locales\plPL\Journey.lua
+Locales\plPL\Battlegrounds.lua
+Locales\plPL\Settings.lua
+Locales\plPL\Windows.lua
+Locales\plPL\Words.lua
+Core\DB.lua
+Core\Bridges\Questie.lua
+Core\Identity.lua
+Core\Location.lua
+Core\Characters.lua
+Core\Heat.lua
+Core\Registry.lua
+Core\Rows.lua
+Core\Interactions.lua
+Core\Sightings.lua
+Core\Diary.lua
+Core\Notes.lua
+Core\Sessions.lua
 # The tour's example person, written through the stores above.
-Core/Sample.lua
-Core/Instances.lua
+Core\Sample.lua
+Core\Instances.lua
 # Battleground matches (Core/Matches.lua has the record); after Instances,
 # as the run's store it mirrors.
-Core/Matches.lua
+Core\Matches.lua
 # Dungeon Crawler Forever's data (GPL-3.0-or-later, Vendor/DungeonCrawlerForever/
 # VERSION): the table it loads into first, then its files as they ship,
 # then the one reader of them.
-Vendor/DungeonCrawlerForever/DCF.lua
-Vendor/DungeonCrawlerForever/Data/Art.lua
-Vendor/DungeonCrawlerForever/Data/ArtForever.lua
-Vendor/DungeonCrawlerForever/Data/ArtCustom.lua
-Vendor/DungeonCrawlerForever/Data/Dungeons.lua
-Vendor/DungeonCrawlerForever/Data/Rares.lua
-Vendor/DungeonCrawlerForever/Data/Wings.lua
-Vendor/DungeonCrawlerForever/Data/Markers.lua
-Vendor/DungeonCrawlerForever/Data/Combined.lua
-Vendor/DungeonCrawlerForever/Data/Routes.lua
-Vendor/DungeonCrawlerForever/Data/Loot.lua
-Core/DungeonRoutes.lua
-Core/Dungeons.lua
-Core/DungeonRun.lua
-Core/DungeonWay.lua
+Vendor\DungeonCrawlerForever\DCF.lua
+Vendor\DungeonCrawlerForever\Data\Art.lua
+Vendor\DungeonCrawlerForever\Data\ArtForever.lua
+Vendor\DungeonCrawlerForever\Data\ArtCustom.lua
+Vendor\DungeonCrawlerForever\Data\Dungeons.lua
+Vendor\DungeonCrawlerForever\Data\Rares.lua
+Vendor\DungeonCrawlerForever\Data\Wings.lua
+Vendor\DungeonCrawlerForever\Data\Markers.lua
+Vendor\DungeonCrawlerForever\Data\Combined.lua
+Vendor\DungeonCrawlerForever\Data\Routes.lua
+Vendor\DungeonCrawlerForever\Data\Loot.lua
+Core\DungeonRoutes.lua
+Core\Dungeons.lua
+Core\DungeonRun.lua
+Core\DungeonWay.lua
 # The route model (Core/Pace/Model.lua) and the pace data it reads
 # (GPL-2.0-or-later, from TrinityCore and VMaNGOS: Core/Pace/*.lua's
 # headers), laid on the map's own way by Core/DungeonPace.lua.
-Core/Pace/Model.lua
-Core/Pace/RagefireChasm.lua
-Core/Pace/Deadmines.lua
-Core/Pace/RazorfenKraul.lua
-Core/Pace/RazorfenDowns.lua
-Core/Pace/StormwindStockade.lua
-Core/Pace/WailingCaverns.lua
-Core/Pace/ShadowfangKeep.lua
-Core/DungeonPace.lua
-Core/RunPage.lua
+Core\Pace\Model.lua
+Core\Pace\RagefireChasm.lua
+Core\Pace\Deadmines.lua
+Core\Pace\RazorfenKraul.lua
+Core\Pace\RazorfenDowns.lua
+Core\Pace\StormwindStockade.lua
+Core\Pace\WailingCaverns.lua
+Core\Pace\ShadowfangKeep.lua
+Core\DungeonPace.lua
+Core\RunPage.lua
 # A battleground's pages laid out (UI/Journey/Match.lua draws them).
-Core/MatchPage.lua
+Core\MatchPage.lua
 # A Warsong told by time: carries, fights, phases, strips (Core/Matches.lua's story).
-Core/MatchStory.lua
+Core\MatchStory.lua
 # Its page laid out: lines, branches, stains, crosses, the band of strips (UI/Journey/MatchStory.lua draws it).
-Core/MatchStoryPage.lua
-Core/Roster.lua
-Core/Reunions.lua
-Core/AutoAdd.lua
-Core/Timeline.lua
-Core/People.lua
-Core/Candidates.lua
-Core/Journey.lua
-Core/Sittings.lua
-Core/CreatureNames.lua
-Core/Custom.lua
-Core/JourneyRecap.lua
-Core/PersonPlate.lua
-Core/Glimpse.lua
-Core/Events.lua
+Core\MatchStoryPage.lua
+Core\Roster.lua
+Core\Reunions.lua
+Core\AutoAdd.lua
+Core\Timeline.lua
+Core\People.lua
+Core\Candidates.lua
+Core\Journey.lua
+Core\Sittings.lua
+Core\CreatureNames.lua
+Core\Custom.lua
+Core\JourneyRecap.lua
+Core\PersonPlate.lua
+Core\Glimpse.lua
+Core\Events.lua
 # After Events.lua: its PLAYER_LOGIN handler runs after the one that
 # loads the saved data.
-Core/Hints.lua
-Core/ChangelogData.lua
-Core/Slash.lua
+Core\Hints.lua
+Core\ChangelogData.lua
+Core\Slash.lua
 
-UI/Kit/Chrome.lua
+UI\Kit\Chrome.lua
 # The diary's size (Settings > Interface): the windows register as they are built.
-UI/Kit/Scale.lua
-UI/Kit/List.lua
-UI/Words/Format.lua
+UI\Kit\Scale.lua
+UI\Kit\List.lua
+UI\Words\Format.lua
 # The Style files in UI/Style/Tokens.lua's order: Draw before Book, which
 # takes Style.Noise as it loads; Cover and Person after it, for its brass.
-UI/Style/Tokens.lua
-UI/Style/Art.lua
-UI/Style/Sound.lua
-UI/Style/Draw.lua
-UI/Style/Book.lua
-UI/Style/Cover.lua
-UI/Style/Widgets.lua
-UI/Style/Person.lua
-UI/Kit/Keys.lua
-UI/Kit/Confirm.lua
+UI\Style\Tokens.lua
+UI\Style\Art.lua
+UI\Style\Sound.lua
+UI\Style\Draw.lua
+UI\Style\Book.lua
+UI\Style\Cover.lua
+UI\Style\Widgets.lua
+UI\Style\Person.lua
+UI\Kit\Keys.lua
+UI\Kit\Confirm.lua
 # The controller (ns.UI.Pad): which hand is in, the glyphs, the focus model,
 # its look, then the catcher that uses them and the menu the pad drives. Input and Glyphs each make an
 # event frame as they load; the rest make frames only once a pad is in hand.
-UI/Pad/Input.lua
-UI/Pad/Glyphs.lua
-UI/Pad/Focus.lua
-UI/Pad/Look.lua
-UI/Pad/Controls.lua
-UI/Pad/Catcher.lua
-UI/Pad/Menu.lua
+UI\Pad\Input.lua
+UI\Pad\Glyphs.lua
+UI\Pad\Focus.lua
+UI\Pad\Look.lua
+UI\Pad\Controls.lua
+UI\Pad\Catcher.lua
+UI\Pad\Menu.lua
 # Pool, Surface and Light make nothing as they load: kits for the paper after them.
-UI/Kit/Pool.lua
-UI/Paper/Surface.lua
-UI/Paper/Light.lua
-UI/Paper/Strip.lua
+UI\Kit\Pool.lua
+UI\Paper\Surface.lua
+UI\Paper\Light.lua
+UI\Paper\Strip.lua
 # An item boxed on a strip (the first found card's box, shared): after the strip, before every card.
-UI/Paper/ItemBox.lua
-UI/Windows/Entry.lua
-UI/Windows/Picker.lua
-UI/Paper/Sheet.lua
-UI/Map/OverlayData.lua
-UI/Map/Art.lua
-UI/Map/Dungeon.lua
-UI/Ink/Blot.lua
-UI/Map/HeatSheet.lua
-UI/Ink/Pen.lua
-UI/Ink/Trail.lua
-UI/Ink/Hand.lua
-UI/Ink/HandData.lua
-UI/Journey/Plate.lua
-UI/Paper/LinkSheet.lua
-UI/Paper/NoteSheet.lua
-UI/Paper/HintSlip.lua
-UI/Words/Timeline.lua
+UI\Paper\ItemBox.lua
+UI\Windows\Entry.lua
+UI\Windows\Picker.lua
+UI\Paper\Sheet.lua
+UI\Map\OverlayData.lua
+UI\Map\Art.lua
+UI\Map\Dungeon.lua
+UI\Ink\Blot.lua
+UI\Map\HeatSheet.lua
+UI\Ink\Pen.lua
+UI\Ink\Trail.lua
+UI\Ink\Hand.lua
+UI\Ink\HandData.lua
+UI\Journey\Plate.lua
+UI\Paper\LinkSheet.lua
+UI\Paper\NoteSheet.lua
+UI\Paper\HintSlip.lua
+UI\Words\Timeline.lua
 # The person's page's words (ns.UI.PersonText): its strips, their tooltips,
 # its plate's marks.
-UI/Words/Person.lua
+UI\Words\Person.lua
 # Your Diary's words (ns.UI.JourneyText): the module and its grammar first,
 # then each file after those whose helpers it takes as it loads.
-UI/Journey/Text/Grammar.lua
-UI/Journey/Text/Time.lua
-UI/Journey/Text/Notes.lua
-UI/Journey/Text/Prose.lua
-UI/Journey/Text/Zones.lua
-UI/Journey/Text/Tips.lua
-UI/Journey/Text/Caption.lua
-UI/Journey/Text/Margin.lua
-UI/Journey/Text/Run.lua
-UI/Journey/Text/Match.lua
-UI/Journey/Text/MatchStory.lua
-UI/Journal/Book.lua
-UI/Journal/Pages.lua
-UI/Journal/Pad.lua
+UI\Journey\Text\Grammar.lua
+UI\Journey\Text\Time.lua
+UI\Journey\Text\Notes.lua
+UI\Journey\Text\Prose.lua
+UI\Journey\Text\Zones.lua
+UI\Journey\Text\Tips.lua
+UI\Journey\Text\Caption.lua
+UI\Journey\Text\Margin.lua
+UI\Journey\Text\Run.lua
+UI\Journey\Text\Match.lua
+UI\Journey\Text\MatchStory.lua
+UI\Journal\Book.lua
+UI\Journal\Pages.lua
+UI\Journal\Pad.lua
 # Your Diary's page (ns.UI.YourDiary): the module and its look first, each
 # file after those it takes from as it loads, the page itself last.
-UI/Journey/Look.lua
-UI/Journey/Left.lua
-UI/Journey/Layouts.lua
-UI/Journey/Leaders.lua
-UI/Journey/People.lua
-UI/Journey/Margin.lua
-UI/Journey/Caption.lua
-UI/Journey/Full.lua
-UI/Journey/Empty.lua
-UI/Journey/Run.lua
-UI/Journey/Match.lua
-UI/Journey/MatchStory.lua
-UI/Journey/Page.lua
-UI/Journey/CardSheet.lua
-UI/Journey/Pad.lua
-UI/Journey/CardPad.lua
+UI\Journey\Look.lua
+UI\Journey\Left.lua
+UI\Journey\Layouts.lua
+UI\Journey\Leaders.lua
+UI\Journey\People.lua
+UI\Journey\Margin.lua
+UI\Journey\Caption.lua
+UI\Journey\Full.lua
+UI\Journey\Empty.lua
+UI\Journey\Run.lua
+UI\Journey\Match.lua
+UI\Journey\MatchStory.lua
+UI\Journey\Page.lua
+UI\Journey\CardSheet.lua
+UI\Journey\Pad.lua
+UI\Journey\CardPad.lua
 # The person's page: its paper strips (the timeline's day labels and note
 # slips among them), the timeline, the People page, then the page's own
 # pieces in the order they take from each other as they load (the plate,
 # the top block that holds it, the clipped name sheet), the page last.
-UI/Journal/Strips.lua
-UI/Journal/Timeline.lua
-UI/Journal/People.lua
-UI/Journal/PersonPlate.lua
-UI/Journal/Clippings.lua
-UI/Journal/Header.lua
-UI/Journal/Profile.lua
+UI\Journal\Strips.lua
+UI\Journal\Timeline.lua
+UI\Journal\People.lua
+UI\Journal\PersonPlate.lua
+UI\Journal\Clippings.lua
+UI\Journal\Header.lua
+UI\Journal\Profile.lua
 # A dungeon run laid out on the table over the book (ns.UI.DungeonPage):
 # the marks on its map first, how high everything on it lies (its
 # shadows), their words, the margin notes (step 2), the map sheet, then
 # the spread that hosts it, the pencil, and the note on the first run out.
-UI/Dungeon/Print.lua
-UI/Dungeon/Heights.lua
-UI/Dungeon/Words.lua
-UI/Dungeon/Notes.lua
-UI/Dungeon/Sheet.lua
-UI/Dungeon/Spread.lua
-UI/Dungeon/Way.lua
-UI/Dungeon/Tutorial.lua
-UI/Dungeon/Pad.lua
-UI/Journal/Nearby.lua
-UI/Journal/NearbyPad.lua
-UI/Journal/Empty.lua
-UI/Journal/Glimpse.lua
-UI/Journal/PeoplePad.lua
-UI/Journal/WritingPad.lua
-UI/Journal/NotePad.lua
-UI/Windows/Pad.lua
+UI\Dungeon\Print.lua
+UI\Dungeon\Heights.lua
+UI\Dungeon\Words.lua
+UI\Dungeon\Notes.lua
+UI\Dungeon\Sheet.lua
+UI\Dungeon\Spread.lua
+UI\Dungeon\Way.lua
+UI\Dungeon\Tutorial.lua
+UI\Dungeon\Pad.lua
+UI\Journal\Nearby.lua
+UI\Journal\NearbyPad.lua
+UI\Journal\Empty.lua
+UI\Journal\Glimpse.lua
+UI\Journal\PeoplePad.lua
+UI\Journal\WritingPad.lua
+UI\Journal\NotePad.lua
+UI\Windows\Pad.lua
 # The hints on the pages (Core/Hints.lua): which, their words and the
 # watcher; their slip is UI/Paper/HintSlip.lua's.
-UI/Journal/Hints.lua
-UI/Journal/HintPad.lua
+UI\Journal\Hints.lua
+UI\Journal\HintPad.lua
 # The reunion toast: the card first (ns.UI.Toast), its words, the queue and
 # the entry point, then placing it.
-UI/Windows/Reunion/Toast.lua
-UI/Windows/Reunion/Words.lua
-UI/Windows/Reunion/Queue.lua
-UI/Windows/Reunion/Placing.lua
-UI/Windows/Reunion/Pad.lua
-UI/Blizzard/Tooltip.lua
+UI\Windows\Reunion\Toast.lua
+UI\Windows\Reunion\Words.lua
+UI\Windows\Reunion\Queue.lua
+UI\Windows\Reunion\Placing.lua
+UI\Windows\Reunion\Pad.lua
+UI\Blizzard\Tooltip.lua
 # Settings: the page first (ns.UI.Settings), then its kit, the quiet list,
 # the macros, and a file per section in the order the page lists them; the
 # signpost after them, where the page's PLAYER_LOGIN handler was.
-UI/Settings/Page.lua
-UI/Settings/Kit.lua
-UI/Settings/Quiet.lua
-UI/Settings/Macro.lua
-UI/Settings/Sections/Recording.lua
-UI/Settings/Sections/Interface.lua
-UI/Settings/Sections/Toasts.lua
-UI/Settings/Sections/Shortcuts.lua
-UI/Settings/Sections/Dungeons.lua
-UI/Settings/Sections/Language.lua
-UI/Settings/Sections/Sounds.lua
-UI/Settings/Sections/Integrations.lua
-UI/Settings/Sections/Battlegrounds.lua
-UI/Settings/Sections/Memory.lua
-UI/Settings/Sections/About.lua
-UI/Settings/Sections/Feedback.lua
-UI/Settings/Sections/Changelog.lua
-UI/Settings/Sections/Credits.lua
-UI/Settings/Pad.lua
-UI/Blizzard/Signpost.lua
+UI\Settings\Page.lua
+UI\Settings\Kit.lua
+UI\Settings\Quiet.lua
+UI\Settings\Macro.lua
+UI\Settings\Sections\Recording.lua
+UI\Settings\Sections\Interface.lua
+UI\Settings\Sections\Toasts.lua
+UI\Settings\Sections\Shortcuts.lua
+UI\Settings\Sections\Dungeons.lua
+UI\Settings\Sections\Language.lua
+UI\Settings\Sections\Sounds.lua
+UI\Settings\Sections\Integrations.lua
+UI\Settings\Sections\Battlegrounds.lua
+UI\Settings\Sections\Memory.lua
+UI\Settings\Sections\About.lua
+UI\Settings\Sections\Feedback.lua
+UI\Settings\Sections\Changelog.lua
+UI\Settings\Sections\Credits.lua
+UI\Settings\Pad.lua
+UI\Blizzard\Signpost.lua
 # The parcel at login: its scene first (ns.UI.Parcel, and the fonts made
 # as it loads), wrapped, torn, then the host and the entry points. The
 # introduction's tour after it (ns.UI.Tour, ns.UI.ShowIntro): it takes the
 # plate, the strips and Core/Sample.lua as it is laid, never at load.
-UI/Windows/Intro/Scene.lua
-UI/Windows/Intro/Wrapped.lua
-UI/Windows/Intro/Torn.lua
-UI/Windows/Intro/Parcel.lua
-UI/Windows/Intro/Tour.lua
-UI/Windows/Intro/Pad.lua
+UI\Windows\Intro\Scene.lua
+UI\Windows\Intro\Wrapped.lua
+UI\Windows\Intro\Torn.lua
+UI\Windows\Intro\Parcel.lua
+UI\Windows\Intro\Tour.lua
+UI\Windows\Intro\Pad.lua
 # Suggest a better wording (UI/Windows/Suggest/Lookup.lua): on a translation
 # only, a line of the diary picked and a correction sent. Self-contained:
 # the folder and these lines are all of it.
-UI/Windows/Suggest/Lookup.lua
-UI/Windows/Suggest/Pick.lua
-UI/Windows/Suggest/Sheet.lua
-UI/Windows/Suggest/Strip.lua
+UI\Windows\Suggest\Lookup.lua
+UI\Windows\Suggest\Pick.lua
+UI\Windows\Suggest\Sheet.lua
+UI\Windows\Suggest\Strip.lua
 # Auto-add's one question when it is switched on (Core/AutoAdd.lua): the
 # people already seen often enough, offered on a loose sheet; its pad scope
 # is UI/Windows/Pad.lua's, looked up when called.
-UI/Windows/AutoAdd.lua
-UI/Blizzard/SocialTab.lua
-UI/Blizzard/Bindings.lua
-UI/Blizzard/Minimap.lua
+UI\Windows\AutoAdd.lua
+UI\Blizzard\SocialTab.lua
+UI\Blizzard\Bindings.lua
+UI\Blizzard\Minimap.lua
 
 # Features: each detection in a folder of its own (Features/<Name>/), which
 # registers itself into the registries of Core/ and UI/ above, so it loads
@@ -396,127 +396,127 @@ UI/Blizzard/Minimap.lua
 # and the bank's events are its alone.
 # Duels anywhere in the block: the client events it hears are its own, and
 # the two messages it fires are heard by core first (ns.Duelling).
-Features/LevelUps/Kind.lua
-Features/LevelUps/Capture.lua
-Features/Trade/Kind.lua
-Features/Trade/Capture.lua
-Features/Chat/Kind.lua
-Features/Chat/Capture.lua
-Features/Campfire/Kind.lua
-Features/Campfire/Text.lua
-Features/Campfire/Mark.lua
-Features/Campfire/Slip.lua
-Features/Campfire/Capture.lua
-Features/Met/Kind.lua
-Features/Met/Text.lua
-Features/Met/Mark.lua
-Features/Met/Strip.lua
-Features/Firsts/Kind.lua
-Features/Firsts/Text.lua
-Features/Firsts/Mark.lua
-Features/Firsts/Card.lua
-Features/Firsts/Capture.lua
-Features/Upgrades/Kind.lua
-Features/Upgrades/Text.lua
-Features/Upgrades/Mark.lua
-Features/Upgrades/Card.lua
-Features/Upgrades/Capture.lua
-Features/ProfessionCaps/Kind.lua
-Features/ProfessionCaps/Text.lua
-Features/ProfessionCaps/Mark.lua
-Features/ProfessionCaps/Capture.lua
-Features/QuestFinales/Kind.lua
-Features/QuestFinales/Data.lua
-Features/QuestFinales/Text.lua
-Features/QuestFinales/Mark.lua
-Features/QuestFinales/Capture.lua
-Features/Duels/Kind.lua
-Features/Duels/Text.lua
-Features/Duels/Mark.lua
-Features/Duels/Slip.lua
-Features/Duels/Capture.lua
-Features/WorldPvP/Kind.lua
-Features/WorldPvP/Capture.lua
-Features/Rares/Kind.lua
-Features/Rares/Capture.lua
-Features/Deaths/Kind.lua
-Features/Deaths/Text.lua
-Features/Deaths/Card.lua
-Features/Deaths/Capture.lua
-Features/CloseCalls/Kind.lua
-Features/CloseCalls/Text.lua
-Features/CloseCalls/Mark.lua
-Features/CloseCalls/Card.lua
-Features/CloseCalls/Capture.lua
-Features/Witnesses/Kind.lua
-Features/Witnesses/Text.lua
-Features/Witnesses/Card.lua
-Features/Hunts/Kind.lua
-Features/Hunts/Text.lua
-Features/Hunts/Mark.lua
-Features/Hunts/HuntCard.lua
-Features/Hunts/LuckyCard.lua
+Features\LevelUps\Kind.lua
+Features\LevelUps\Capture.lua
+Features\Trade\Kind.lua
+Features\Trade\Capture.lua
+Features\Chat\Kind.lua
+Features\Chat\Capture.lua
+Features\Campfire\Kind.lua
+Features\Campfire\Text.lua
+Features\Campfire\Mark.lua
+Features\Campfire\Slip.lua
+Features\Campfire\Capture.lua
+Features\Met\Kind.lua
+Features\Met\Text.lua
+Features\Met\Mark.lua
+Features\Met\Strip.lua
+Features\Firsts\Kind.lua
+Features\Firsts\Text.lua
+Features\Firsts\Mark.lua
+Features\Firsts\Card.lua
+Features\Firsts\Capture.lua
+Features\Upgrades\Kind.lua
+Features\Upgrades\Text.lua
+Features\Upgrades\Mark.lua
+Features\Upgrades\Card.lua
+Features\Upgrades\Capture.lua
+Features\ProfessionCaps\Kind.lua
+Features\ProfessionCaps\Text.lua
+Features\ProfessionCaps\Mark.lua
+Features\ProfessionCaps\Capture.lua
+Features\QuestFinales\Kind.lua
+Features\QuestFinales\Data.lua
+Features\QuestFinales\Text.lua
+Features\QuestFinales\Mark.lua
+Features\QuestFinales\Capture.lua
+Features\Duels\Kind.lua
+Features\Duels\Text.lua
+Features\Duels\Mark.lua
+Features\Duels\Slip.lua
+Features\Duels\Capture.lua
+Features\WorldPvP\Kind.lua
+Features\WorldPvP\Capture.lua
+Features\Rares\Kind.lua
+Features\Rares\Capture.lua
+Features\Deaths\Kind.lua
+Features\Deaths\Text.lua
+Features\Deaths\Card.lua
+Features\Deaths\Capture.lua
+Features\CloseCalls\Kind.lua
+Features\CloseCalls\Text.lua
+Features\CloseCalls\Mark.lua
+Features\CloseCalls\Card.lua
+Features\CloseCalls\Capture.lua
+Features\Witnesses\Kind.lua
+Features\Witnesses\Text.lua
+Features\Witnesses\Card.lua
+Features\Hunts\Kind.lua
+Features\Hunts\Text.lua
+Features\Hunts\Mark.lua
+Features\Hunts\HuntCard.lua
+Features\Hunts\LuckyCard.lua
 # A class's moments: one feature a class, in the Classes group
 # (Features/Classes/<Class>/). A hunter's tames hear UNIT_SPELLCAST_SENT
 # and UNIT_PET, which nothing else hears, and only on a hunter; their
 # SD_WORLD_SETTLED reads nothing Firsts or Profession caps keep, so they
 # sit anywhere in the block (Features/Classes/Hunter/Capture.lua's header).
-Features/Classes/Hunter/Kind.lua
-Features/Classes/Hunter/Data.lua
-Features/Classes/Hunter/Text.lua
-Features/Classes/Hunter/Mark.lua
-Features/Classes/Hunter/Card.lua
-Features/Classes/Hunter/Capture.lua
+Features\Classes\Hunter\Kind.lua
+Features\Classes\Hunter\Data.lua
+Features\Classes\Hunter\Text.lua
+Features\Classes\Hunter\Mark.lua
+Features\Classes\Hunter\Card.lua
+Features\Classes\Hunter\Capture.lua
 
-Capture/Menus.lua
-Capture/Group.lua
-Capture/Instances.lua
-Capture/CoA.lua
+Capture\Menus.lua
+Capture\Group.lua
+Capture\Instances.lua
+Capture\CoA.lua
 # Battleground matches: the only capture that writes inside a match
 # (ns.InBattleground keeps the rest out). Independent of Instances.
-Capture/Matches.lua
-Capture/Together.lua
-Capture/Nearby.lua
-Capture/Sightings.lua
-Capture/Journey.lua
+Capture\Matches.lua
+Capture\Together.lua
+Capture\Nearby.lua
+Capture\Sightings.lua
+Capture\Journey.lua
 # Hunts' capture stays where it always was, after Capture/: it
 # shares the quest events, the kills, the loot window and the login with
 # Capture/, so every event order stays the old one
 # (Features/Hunts/Capture.lua's header).
-Features/Hunts/Capture.lua
+Features\Hunts\Capture.lua
 # Witnesses' capture stays where its file was, after Capture/: it reads the
 # same units as Capture/Nearby.lua's reunion toast and must still run after
 # it, as on every event it shares with Capture/
 # (Features/Witnesses/Capture.lua's header).
-Features/Witnesses/Capture.lua
+Features\Witnesses\Capture.lua
 #@do-not-package@
 # Development tooling: diagnostics, /sd art, /sd journey and /sd testdata. They
 # register their own /sd commands. A feature's Dev.lua adds its test data to
 # /sd testdata (TestData.Register), so it comes after Dev/TestData.lua.
-Dev/Art.lua
-Dev/Diagnostics.lua
-Dev/LootProbe.lua
-Dev/CloseCallProbe.lua
-Dev/HandTest.lua
-Dev/SightingsDebug.lua
-Dev/JourneyDebug.lua
-Dev/PaceDebug.lua
-Dev/TestData.lua
-Dev/TestMatches.lua
-Dev/Hints.lua
-Dev/Pad.lua
-Features/LevelUps/Dev.lua
-Features/Trade/Dev.lua
-Features/Chat/Dev.lua
-Features/Campfire/Dev.lua
-Features/Firsts/Dev.lua
-Features/Upgrades/Dev.lua
-Features/ProfessionCaps/Dev.lua
-Features/QuestFinales/Dev.lua
-Features/WorldPvP/Dev.lua
-Features/Deaths/Dev.lua
-Features/CloseCalls/Dev.lua
-Features/Witnesses/Dev.lua
-Features/Hunts/Dev.lua
-Features/Duels/Dev.lua
-Features/Classes/Hunter/Dev.lua
+Dev\Art.lua
+Dev\Diagnostics.lua
+Dev\LootProbe.lua
+Dev\CloseCallProbe.lua
+Dev\HandTest.lua
+Dev\SightingsDebug.lua
+Dev\JourneyDebug.lua
+Dev\PaceDebug.lua
+Dev\TestData.lua
+Dev\TestMatches.lua
+Dev\Hints.lua
+Dev\Pad.lua
+Features\LevelUps\Dev.lua
+Features\Trade\Dev.lua
+Features\Chat\Dev.lua
+Features\Campfire\Dev.lua
+Features\Firsts\Dev.lua
+Features\Upgrades\Dev.lua
+Features\ProfessionCaps\Dev.lua
+Features\QuestFinales\Dev.lua
+Features\WorldPvP\Dev.lua
+Features\Deaths\Dev.lua
+Features\CloseCalls\Dev.lua
+Features\Witnesses\Dev.lua
+Features\Hunts\Dev.lua
+Features\Duels\Dev.lua
+Features\Classes\Hunter\Dev.lua

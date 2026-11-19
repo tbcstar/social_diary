@@ -55,6 +55,12 @@
    正确写法：`if not C_Map.GetMapInfo then function C_Map.GetMapInfo(id) ... end end`；
    整表缺失时才建表，表已存在时逐个成员判空。同理适用于 `Enum`（只加成员）、`C_Timer`、`C_CVar`、`C_NamePlate`。
 
+10. **TOC 里的文件条目一律用反斜杠 `\`**（`Core\Addon.lua`）。3.3.5 客户端把 TOC 行按字面拼到
+   插件目录后面，不做分隔符归一化：写 `Core/Addon.lua` 会得到
+   `Interface\AddOns\social_diary\Core/Addon.lua`，客户端对**每一行**打一条 `Error loading`，
+   整包 Lua 一行都不执行（插件列表里还有名字、勾选也在，只是 `/sd` 不存在）。上游为 retail 写的是 `/`，
+   所以合并上游 TOC 后必须再转一次；`tools/coa_audit.py` 的 R2 会拦。
+
 ## 3. 兼容层契约（`Core/Compat/`，owner: core-port）
 
 每个文件在 TOC 里紧跟 `Core/Addon.lua` 之后、`Locales/` 之前加载。**按成员补齐，不做整表 guard**（硬性规则 9）：

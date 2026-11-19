@@ -6,7 +6,7 @@
 2. 把 **整个** `D:\DSH-source\social_diary_coa\social_diary\` 目录复制到
    `D:\Game\CoA-live-64\Interface\AddOns\social_diary\`
    （目标路径的最后一级必须正好是 `social_diary`，与 `.toc` 同名，否则客户端不认）。
-3. 启动游戏 → 角色选择界面左下"插件"按钮 → 确认 "Social Diary" 出现在列表里且没有报错标记。
+3. 启动游戏 → 角色选择界面左下"插件"按钮 → 确认「冒险日记」（英文原名 Social Diary）出现在列表里且没有报错标记。
    如果显示"过期"，说明 TOC 里的 `## Interface:` 值与客户端不符（`python tools/coa_pack.py --info` 会打印本插件与客户端里已安装插件的 Interface 取值）。
 4. 进游戏后 `/sd` 或 `/socialdiary` 打开；`/sd help` 看命令。
 5. 首次进去请打开设置页确认语言是 **简体中文**（默认值已改成 zhCN）。
@@ -34,6 +34,19 @@ python tools/coa_pack.py --client "D:\Game\CoA-live-64" --out "D:\tmp\sd"
 3. 打开"旅程/地图"视图，地图不崩（3.3.5 没有 C_Map，这里是降级路径）。
 4. 打开"副本"视图，CoA 的副本列表里有内容。
 5. 设置页能打开、能保存、重登后设置还在。
+
+## 排错：列表里有名字，但 `/sd` 不存在
+
+这是 3.3.5 客户端**整包没加载**时的表现（2026-11-19 在本机踩过一次）：插件被识别、勾选状态在，
+但 Lua 一行都没跑，所以命令没注册。查两步：
+
+1. 看 `D:\Game\CoA-live-64\Logs\FrameXML.log`，搜 `social_diary`：
+   出现一排 `Error loading ...\social_diary\Core/Addon.lua` = 打开文件失败，不是 Lua 报错。
+2. 这种失败最常见的原因是 **TOC 里用了正斜杠** `/`。3.3.5 客户端把 TOC 的每一行**按字面**拼到插件目录后面，
+   不做分隔符归一化，于是 `Core/Addon.lua` 变成 `Interface\AddOns\social_diary\Core/Addon.lua` 打不开。
+   查：`Select-String -Path <插件>\social_diary.toc -Pattern '^[^#].*\.lua$' | Where-Object { $_.Line -match '/' }`
+   —— 有输出就是这个问题；把那一行的 `/` 全换成 `\` 后 `/reload`。
+   `python tools\coa_audit.py` 的 R2 现在会直接拦这种写法。
 
 ## 回滚
 

@@ -1300,7 +1300,8 @@ function M.LoadAddon(root)
             M.savedVariables[#M.savedVariables + 1] = name
         end
 
-        local file = line:match("^([%w_]+/[%w_/]+%.lua)%s*$")
+        local file = line:match("^([%w_]+[\\/][%w_\\/]+%.lua)%s*$")
+        file = file and file:gsub("\\", "/")
         if file then
             -- loadfile's own message names the line of a syntax error; a
             -- generic "cannot load" would hide it.
