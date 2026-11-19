@@ -65,3 +65,22 @@ for name, shim in pairs(compat.SHIMS) do
     Check(type(name) == "string" and type(shim) == "function", "a shim is not a function: " .. tostring(name))
 end
 Check(count >= 15, "too few shims to cover the methods the probe found missing: " .. count)
+
+Section("the methods that only ask a question stay missing")
+
+-- Style.Quad, Paper/Surface and Paper/Sheet each ask whether the client can move
+-- a texture's corners and fall back when it cannot. Filling that one in made
+-- every stroke paint its axis-aligned box: the journal's pages came out as
+-- solid slabs on 19 Nov 2026. It must never be in the table.
+Eq(compat.SHIMS.SetVertexOffset, nil, "SetVertexOffset was filled in, so every quad believes it can bend")
+Eq(methods.SetVertexOffset, nil, "a texture was told it can move corners it cannot")
+
+local tex = setmetatable({}, { __index = {
+    ClearAllPoints = function() end,
+    SetPoint = function() end,
+    SetSize = function() end,
+    SetRotation = function() end,
+} })
+compat.Fill(tex)
+Eq(ns.Style.Quad(tex, tex, 0, 0, 10, 0, 10, 10, 0, 10), false,
+    "a quad claimed the corners moved on a client that cannot move them")

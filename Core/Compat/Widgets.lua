@@ -11,9 +11,14 @@
 -- members the client lacks are set: one the client already has is never
 -- touched.
 --
--- What is NOT filled: masks (CreateMaskTexture/AddMaskTexture) and the
--- EventRegistry callbacks. A fake mask would print wrong art rather than skip
--- it, and every caller of those asks for the method first; see UI/Map/Dungeon.
+-- What is NOT filled: masks (CreateMaskTexture/AddMaskTexture), vertex offsets
+-- (SetVertexOffset) and the EventRegistry callbacks. A fake mask would print
+-- wrong art rather than skip it, and every caller of those asks for the method
+-- first; see UI/Map/Dungeon. A fake vertex offset is worse: Style.Quad asks
+-- whether the client can move a texture's corners and on yes draws that shape,
+-- so filling it in made every stroke and torn edge paint its axis-aligned box
+-- instead (19 Nov 2026: the journal's pages came out as solid slabs). The
+-- addon's own fallbacks are what should run.
 --
 -- The mock gives each widget its own methods and no metatable, so nothing here
 -- installs under tests; tests/widgets.lua covers it with a metatable of its own.
@@ -41,7 +46,6 @@ local SHIMS = {
     -- no counterpart, and none of them changes what is drawn here.
     SetSnapToPixelGrid = function() end,
     SetTexelSnappingBias = function() end,
-    SetVertexOffset = function() end,
     SetClipsChildren = function() end,
     SetMaxLines = function() end,
     SetPropagateKeyboardInput = function() end,
