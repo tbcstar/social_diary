@@ -165,7 +165,7 @@ local function Prepare(guid, opts)
 
     -- Added off a unit token (target, mouseover, a unit frame in range): they
     -- are right here.
-    local here = opts.unit and UnitIsVisible and UnitIsVisible(opts.unit) and true or false
+    local here = opts.unit ~= nil and ns.Near(opts.unit)
     return entry, here
 end
 

@@ -197,14 +197,23 @@ function DungeonMap.Printer(K, sheet, layer, sublevel)
     local asked, fn = pcall(function() return probe.SetDesaturation end)
     printer.canDesaturate = asked and type(fn) == "function"
     probe:Hide()
-    local mask = sheet:CreateMaskTexture()
-    asked, fn = pcall(function() return mask.SetRotation end)
-    printer.masksTurn = asked and type(fn) == "function"
-    printer.masks[1] = mask
+    -- 3.3.5a makes no mask textures (no CreateMaskTexture on a frame): a sheet
+    -- is then printed whole, each piece cut by its texcoords alone. The
+    -- feathering is lost, the map is not, and the printer stays usable.
+    local mask = sheet.CreateMaskTexture and sheet:CreateMaskTexture() or nil
+    printer.maskable = mask ~= nil
+    if mask then
+        asked, fn = pcall(function() return mask.SetRotation end)
+        printer.masksTurn = asked and type(fn) == "function"
+        printer.masks[1] = mask
+    else
+        printer.masksTurn = false
+    end
 
     -- A combined map's piece `pi`: its mask, and its own pool of tiles,
     -- which keep that mask for good, so no tile ever changes mask.
     local function Piece(pi)
+        if not printer.maskable then return nil end
         local m = printer.masks[pi]
         if not m then
             m = sheet:CreateMaskTexture()
@@ -232,18 +241,26 @@ function DungeonMap.Printer(K, sheet, layer, sublevel)
         for _, pool in pairs(self.masked) do pool:Begin() end
         local list = DungeonMap.Pieces(floor, window)
         local s = floor and w / floor.w or 1
-        for pi, box in pairs(list.masks) do
-            local m = Piece(pi)
-            m:Show()
-            K.Place(m, x + box.x0 * s, y + box.y0 * s, (box.x1 - box.x0) * s, (box.y1 - box.y0) * s)
-        end
-        for pi, m in pairs(self.masks) do
-            if not list.masks[pi] then m:Hide() end
+        if self.maskable then
+            for pi, box in pairs(list.masks) do
+                local m = Piece(pi)
+                if m then
+                    m:Show()
+                    K.Place(m, x + box.x0 * s, y + box.y0 * s, (box.x1 - box.x0) * s, (box.y1 - box.y0) * s)
+                end
+            end
+            for pi, m in pairs(self.masks) do
+                if not list.masks[pi] then m:Hide() end
+            end
         end
         local tint = look and (self.canDesaturate and look.tint or look.plain or look.tint) or { 1, 1, 1 }
         local grey = look and look.desaturate or 0
         for _, p in ipairs(list) do
-            local pool = p.piece and select(2, Piece(p.piece)) or self.tiles
+            local pool = self.tiles
+            if p.piece and self.maskable then
+                local _, masked = Piece(p.piece)
+                if masked then pool = masked end
+            end
             local sx0, sy0 = x + p.x0 * s, y + p.y0 * s
             -- Over the next piece by a hair, but never past what is printed.
             local sx1 = x + p.x1 * s + (p.x1 < list.window[3] and list.seam or 0)

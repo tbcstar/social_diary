@@ -757,7 +757,7 @@ function YourDiary.DrawRun(e, visit)
     local seed = Surface.Seed("run:" .. tostring(visit.id))
 
     -- The title: hand-lettered, as large as it goes on one line; else two.
-    local name = visit.name or ns.T("A dungeon")
+    local name = ns.UI.Format.VisitName(visit) or ns.T("A dungeon")
     local size, two = ns.RunPage.TitleSize(function(s) return Measure(run, name, Style.GOODMOUNTAIN, s) end)
     local T = RUN.title
     local titleLines = two and Wrap(run, name, Style.GOODMOUNTAIN, size, T.most, 2) or { name }

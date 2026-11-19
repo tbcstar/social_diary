@@ -134,13 +134,20 @@ end
 Section("the reader's choice of language")
 do
     local Locale = ns.Locale
-    Eq(Locale.id, "enUS", "the client's language without a choice")
+    -- This client is a WotLK one (an interface of 30300) and this port's words
+    -- are Chinese there; a client the diary was written for reads its own
+    -- language. The suite starts from a saved English choice (tests/wowmock.lua
+    -- Reset), so the two differ here: Locale.default is what "auto" means,
+    -- Locale.id is what the diary reads.
+    Eq(Locale.default, "zhCN", "the language this port reads with no choice")
+    Eq(Locale.id, "enUS", "a saved choice is the language the diary reads")
     Eq(Locale.client, "enUS", "and the client's is kept beside it")
     Eq(Locale.offered[1].id, "enUS", "English is always offered")
-    Eq(Locale.Wanted("auto"), "enUS", "auto is the client's")
-    Eq(Locale.Wanted(nil), "enUS", "so is no setting at all")
+    Eq(Locale.Wanted("auto"), "zhCN", "auto is this port's language")
+    Eq(Locale.Wanted(nil), "zhCN", "so is no setting at all")
     Eq(Locale.Wanted("frFR"), "frFR", "a choice is itself")
-    Eq(Locale.Pending("auto"), false, "nothing waits while the setting is what the diary reads")
+    Eq(Locale.Pending("enUS"), false, "nothing waits while the setting is what the diary reads")
+    Eq(Locale.Pending("auto"), true, "a setting of auto waits: it reads Chinese")
     Eq(Locale.Pending("frFR"), true, "a choice made this session waits for a reload")
 
     -- A choice saved before the load, handed over before the files run.
@@ -157,15 +164,18 @@ do
     Eq(#chose.Locale.offered, 2, "a locale is offered once")
     Eq(chose.Locale.Offers("xxXX"), true, "and found")
     _G.SocialDiaryDB = { settings = { language = "auto" } }
-    Eq(T.Load().Locale.id, "enUS", "auto reads the client's")
+    Eq(T.Load().Locale.id, "zhCN", "auto reads this port's language")
     _G.SocialDiaryDB, T.ns = saved, wasNs
 
     -- A client that hands the saved table over too late: the choice shows
     -- only once the settings are in, and it is not what the diary reads.
     Eq(Locale.Settle("frFR"), true, "a saved choice that did not apply is noticed")
     Eq(Locale.stuck, true, "and kept for the settings page")
-    Locale.Settle("auto")
-    Eq(Locale.stuck, false, "auto never is")
+    -- What the diary reads is never waiting for itself. ("auto" is no longer
+    -- this: on a 3.3.5 interface it asks for Chinese, which is a choice like
+    -- any other and can wait; the settings page shows it waiting.)
+    Locale.Settle("enUS")
+    Eq(Locale.stuck, false, "the language it reads never is")
 end
 
 Section("a person's gender")
@@ -425,10 +435,15 @@ end
 local loaded = {}
 local function GrammarNs(id)
     if loaded[id] then return loaded[id] end
-    local was, wasNs = _G.GetLocale, T.ns
+    local was, wasNs, wasDB = _G.GetLocale, T.ns, rawget(_G, "SocialDiaryDB")
     _G.GetLocale = function() return id end
+    -- Locale resolves the READING language before it looks at the client's
+    -- locale, and on a 3.3.5 build the unset default is Chinese: without a
+    -- saved choice of this id every non-English Grammar.lua would return early
+    -- and the rules below would assert against nothing.
+    _G.SocialDiaryDB = { settings = { language = id } }
     loaded[id] = T.Load()
-    _G.GetLocale, T.ns = was, wasNs
+    _G.GetLocale, T.ns, _G.SocialDiaryDB = was, wasNs, wasDB
     return loaded[id]
 end
 local function GrammarOf(id) return GrammarNs(id).Locale.grammar end

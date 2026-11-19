@@ -174,7 +174,9 @@ function Parcel.BuildWrapped(host, S)
     S.Rect(F, "OVERLAY", -2, lx + o, ly + o, 1, A.h - 2 * o, ink)
     S.Rect(F, "OVERLAY", -2, lx + A.w - o - 1, ly + o, 1, A.h - 2 * o, ink)
     local label = { title = Style.Text(F, FONT.page) }
-    label.title:SetText("SOCIAL DIARY")
+    -- The imprint on the wrapping: the add-on's name in the reader's
+    -- language, set in capitals where the language has them.
+    label.title:SetText(string.upper(L["Social Diary"]))
     S.Line(label.title, lx + A.w / 2, ly + A.title, "CENTER")
     host.label = label
 

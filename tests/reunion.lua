@@ -38,7 +38,7 @@ Check(lines[1]:find("friend") and lines[1]:find("questing buddy"), "tags line: "
 Eq(lines[2], "helped me with Nagas", "the note's first line only")
 Eq(lines[3], "Met 1 time, last 3 days ago", "times met and last met")
 Eq(#mock.UnitTooltip(C), 0, "tooltip lines for somebody outside the diary")
-Eq(#mock.UnitTooltip(mock.secret(A)), 0, "tooltip lines for a secret GUID")
+Eq(#mock.UnitTooltip(mock.secret(A)), 3, "no restricted values: a withheld GUID reads like any other")
 Eq(#mock.UnitTooltip(nil), 0, "tooltip lines with no GUID")
 
 -- A long note is cut on a character boundary, never inside one.
@@ -251,15 +251,17 @@ mock.groupSize = 0
 mock.SetUnit("party1", nil)
 mock.fire("GROUP_ROSTER_UPDATE")
 
--- Nobody outside the diary, no secrets, and the switch works.
+-- Nobody outside the diary, and the switch works.
 mock.SetUnit("nameplate2", PUG)
 mock.fire("NAME_PLATE_UNIT_ADDED", "nameplate2")
 Eq(ns.UI.ReunionShowing(), nil, "a nearby toast for somebody outside the diary")
 
+-- No restricted values on 3.3.5: a withheld GUID reads like any other, so
+-- the diary's own character does get the card.
 mock.SetUnit("nameplate3", F.Like(STRANGER, { guid = mock.secret(A) }))
 mock.fire("NAME_PLATE_UNIT_ADDED", "nameplate3")
-mock.fire("NAME_PLATE_UNIT_ADDED", mock.secret("nameplate1"))
-Eq(ns.UI.ReunionShowing(), nil, "a nearby toast from a secret GUID or token")
+Check(ns.UI.ReunionShowing() ~= nil, "no nearby toast for a diary character")
+mock.RunTimers()
 
 ns.db.settings.nearbyToasts = false
 mock.fire("NAME_PLATE_UNIT_ADDED", "nameplate1")
@@ -479,11 +481,11 @@ mock.now = mock.now + 20
 
 -- Then on another map, then twice in Mulgore -- the second read inside the
 -- throttle does not count.
-mock.mapID, mock.position = 1413, { x = 0.1, y = 0.9 }
+mock.MoveTo(1413, { x = 0.1, y = 0.9 })
 mock.fire("NAME_PLATE_UNIT_ADDED", "nameplate1")
 Check(HeatOf(A) and HeatOf(A)[1413], "no heat on the first map")
 
-mock.mapID, mock.position = 1412, { x = 0.4213, y = 0.6157 }
+mock.MoveTo(1412, { x = 0.4213, y = 0.6157 })
 mock.now = mock.now + 20
 mock.fire("NAME_PLATE_UNIT_ADDED", "nameplate1")
 local cell = 30 * 50 + 21  -- row 30, column 21
@@ -643,7 +645,10 @@ for _, region in ipairs(mock.frames) do
 end
 Check(border >= 4, "no border round the map: " .. border)
 Eq(HM.mapID, 1412, "the map the user is on should come first")
-Eq(HM.tileCount, 12, "map art tiles (4 x 3)")
+-- 3.3.5 has no C_Map.GetMapArtLayers (PORT.md §5), so a map draws as a
+-- blank card with the heat on it: no art tiles, and the zone name below
+-- proves the client did select Mulgore all the same.
+Eq(HM.tileCount, 0, "map art tiles on a client without map art")
 Eq(HM.cellCount, 1, "heat squares for one cell")
 Eq(HM.mapButton:GetText(), "Mulgore", "map link")
 Check(HM.also[1]:IsShown() and HM.also[1]:GetText() == "The Barrens (1)", "no link to the other map")
@@ -849,7 +854,10 @@ local now = mock.now
 Eq(R.Cooldown(), 10 * 60, "the default cooldown")
 Eq(R.Due(B, "group", now), B, "a group toast not due")
 Eq(R.Due(B, "nearby", now), B, "a nearby toast not due")
-Eq(R.Due(mock.secret(B), "group", now), nil, "a secret GUID was due a toast")
+-- No restricted values on 3.3.5: a withheld GUID reads as itself, so it is
+-- due like any other; SafeGUID still filters the shapes that are not GUIDs.
+Eq(R.Due(mock.secret(B), "group", now), B, "no restricted values: a withheld GUID is due like any other")
+Eq(R.Due(nil, "group", now), nil, "a missing GUID was due a toast")
 
 R.Greet(B, now)
 Eq(ns.db.meta.greeted[B], now, "Greet did not stamp")
@@ -911,7 +919,11 @@ ns.db.settings.foeAlert = true
 Eq(R.FoeAlert(C, now), true, "no alert for a foe in view")
 Eq(R.FoeAlert(C, now + 59), false, "the same foe alerted again inside a minute")
 Eq(R.FoeAlert(C, now + 60), true, "no alert once the minute ran out")
-Eq(R.FoeAlert(mock.secret(C), now + 200), false, "an alert from a secret GUID")
+-- No restricted values on 3.3.5: a withheld GUID is the same foe, so the
+-- alert behaves exactly as above; SafeGUID still rejects a shape that is
+-- not a GUID at all.
+Eq(R.FoeAlert(mock.secret(C), now + 200), true, "no restricted values: a withheld foe is alerted like any other")
+Eq(R.FoeAlert(nil, now + 250), false, "an alert for no GUID")
 
 ns.Diary.RemoveTag(C, "foe")
 Eq(R.FoeAlert(C, now + 300), false, "an alert for someone no longer a foe")

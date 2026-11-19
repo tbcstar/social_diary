@@ -3,6 +3,11 @@ if not ns.Locale.Is("zhCN") then return end
 
 ns.Locale.Add("zhCN", {
     -- UI/Windows/Entry.lua
+    -- UI/Windows/AutoAdd.lua
+        ["Familiar faces"] = "熟面孔",
+        ["Add them"] = "加上",
+        ["You’ve seen %d person near you 3 times or more.|You’ve seen %d people near you 3 times or more.##plural"] = "你在附近至少遇见过3次的，有%d人。",
+        ["Add them to the diary now? If not, they’re added the next time you see them."] = "现在就写进日记？如果不是，下次见到他们时会自动加上。",
     ["no interactions yet"] = "还没有互动",
     ["%d interaction on record|%d interactions on record##plural"] = "%d条互动记录",
     ["Added %1$s %2$s, %3$s##zone"] = "于%1$s添加，%2$s，%3$s",
@@ -56,6 +61,7 @@ ns.Locale.Add("zhCN", {
     ["Thex is in your diary now. When you meet again, the diary will tell you."] = "塞克斯现在在你的日记里了。当你们再次相遇时，日记会告诉你。",
     ["Click him to see his page."] = "点击他查看他的页面。",
     ["Wolfskin Bracers"] = "狼皮护腕",
+    ["Your first green!"] = "你的第一件绿装！",
     ["%d of 5"] = "%d / 5",
     ["An Example"] = "一个示例",
     ["This is how the people you add will look."] = "这就是你添加的人物的样子。",
@@ -67,6 +73,7 @@ ns.Locale.Add("zhCN", {
     ["Put the page away"] = "收起页面",
     ["Remember them"] = "记录",
     ["Put the list away"] = "收起列表",
+        ["Not now"] = "先不",
     -- UI/Windows/Picker.lua
     ["Remember this"] = "记下来",
     ["Click somebody to add them. Already in the diary opens their entry."] = "点击某人来添加他。已在日记中的会打开他的条目。",

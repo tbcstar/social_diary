@@ -63,6 +63,7 @@ ns.Locale.Add("ptBR", {
     ["Thex is in your diary now. When you meet again, the diary will tell you."] = "Thex está no seu diário agora. Quando vocês se encontrarem de novo, o diário vai te avisar.",
     ["Click him to see his page."] = "Clique nele para ver a página dele.",
     ["Wolfskin Bracers"] = "Braçadeiras de Pele de Lobo",
+    ["Your first green!"] = "Seu primeiro item verde!",
     ["%d of 5"] = "%d de 5",
     ["An Example"] = "Um exemplo",
     ["This is how the people you add will look."] = "É assim que vão aparecer as pessoas que você adicionar.",

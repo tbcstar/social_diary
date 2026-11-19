@@ -52,6 +52,24 @@ local addonName, ns = ...
 local CloseCalls = {}
 ns.CloseCalls = CloseCalls
 
+--[[ The damage meter, decided once.
+  C_DamageMeter is a WoW Forever global: it has no 3.3.5 equivalent and the
+  CoA client ships no damage meter at all, so on CoA every reading taken off
+  it is nil. Three features read it -- this one (damage taken, healing
+  received), the deaths recap and battleground matches' fight log -- and a
+  guard repeated in each of them drifts apart, so the question "is there a
+  meter?" is asked here and nowhere else. The global, not a saved flag, is
+  the answer: the meter is either there at the moment of the fight or not.
+  What the meter can answer (which Enum.DamageMeterType it knows, which of its
+  calls exist) stays each caller's own guard: those differ from call to call,
+  while "there is no meter at all" does not.
+
+  Called from event handlers only, so load order does not matter: whichever
+  feature fires first, every file has loaded by then. ]]--
+function ns.HasDamageMeter()
+    return C_DamageMeter ~= nil
+end
+
 local Journey = ns.Journey
 local L, Fmt = ns.L, ns.Fmt
 

@@ -141,13 +141,14 @@ Eq(death.killer.source, "target", "a stale recap replaced the guess")
 Eq(Pending(), 0, "a death kept waiting past its tries")
 Eq(DeathLines(GUID)[3], "You died, probably to Plainstrider near Red Cloud Mesa", "a guessed death's line")
 
--- A secret recap is skipped without touching it.
+-- A withheld recap reads as a plain one on 3.3.5, so it is used rather than
+-- skipped; skipping belongs to retail's restricted values.
 mock.now = mock.now + 300
 recaps.latest = mock.secret(Pack(SELF.guid, mock.now))
 mock.fire("PLAYER_DEAD")
 death = s.deathLog[4]
 for _ = 1, 12 do mock.RunTimers() end
-Eq(death.killer.source, "target", "a secret recap replaced the guess")
+Eq(death.killer.source, "recap", "no restricted values: the recap is read")
 
 -- No recap API at all, and nothing targeted: a death with no killer.
 local api = _G.C_DeathRecap

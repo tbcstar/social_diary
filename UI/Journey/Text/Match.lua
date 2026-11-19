@@ -257,8 +257,7 @@ Text.MATCH = {
 function Text.MatchRowTip(p, match)
     local lines = {}
     -- (the class is the board's token, "WARRIOR": the client's name for it)
-    local class = p.class and (LOCALIZED_CLASS_NAMES_MALE and LOCALIZED_CLASS_NAMES_MALE[p.class]
-        or (p.class:sub(1, 1) .. p.class:sub(2):lower()))
+    local class = p.class and (Format.ClassName(p) or (p.class:sub(1, 1) .. p.class:sub(2):lower()))
     if p.race and class then
         lines[#lines + 1] = Fmt(L["%1$s %2$s##race class"], p.race, class)
     elseif p.race or class then

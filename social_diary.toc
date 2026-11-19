@@ -1,18 +1,31 @@
-## Interface: 16001
-## Title: Social Diary
-## Notes: Remembers the people you meet in the open world.
+## Interface: 30300
+# 3.3.5 的插件列表（AddOns）按客户端语言显示标题与说明，而 CoA 客户端只装了 enUS，
+# 所以这里直接写中文；上游原文留在下一行注释里，合并上游时照着核对。
+# Upstream: ## Title: Social Diary / ## Notes: Remembers the people you meet in the open world.
+## Title: 冒险日记
+## Notes: 记住你在野外遇见的每一个人。
 ## Author: social-diary
 ## Version: 4.2.0
 ## SavedVariables: SocialDiaryDB
 ## SavedVariablesPerCharacter: SocialDiaryCharDB
-## LoadSavedVariablesFirst: 1
 ## IconTexture: Interface\Icons\INV_Misc_Book_09
-## AddonCompartmentFunc: SocialDiary_OnCompartmentClick
-## X-Category: Social
 ## OptionalDeps: QuestieDB, Questie
 ## X-License: GPL-3.0-or-later
 
 Core/Addon.lua
+
+# Compat: the retail global names this addon was written against, rebuilt
+# on 3.3.5's API (Core/Compat/NOTES.md lists every difference). Right after
+# the namespace, before anything that could call one of them.
+Core/Compat/Env.lua
+Core/Compat/Extras.lua
+Core/Compat/Textures.lua
+Core/Compat/Map.lua
+Core/Compat/Items.lua
+Core/Compat/Quests.lua
+Core/Compat/Units.lua
+Core/Compat/PvP.lua
+Core/Compat/Settings.lua
 # Translations (Locales/Locale.lua): the lookup first, the English every
 # key falls back to, then each locale's words. Before everything else, so a
 # file can take its words as it loads.
@@ -92,6 +105,9 @@ Locales/zhCN/Journey.lua
 Locales/zhCN/JournalDungeon.lua
 Locales/zhCN/Settings.lua
 Locales/zhCN/Windows.lua
+Locales/zhCN/CoA.lua
+Locales/zhCN/Names.lua
+Locales/zhCN/Changelog.lua
 Locales/plPL/Grammar.lua
 Locales/plPL/Core.lua
 Locales/plPL/Features.lua
@@ -455,6 +471,7 @@ Features/Classes/Hunter/Capture.lua
 Capture/Menus.lua
 Capture/Group.lua
 Capture/Instances.lua
+Capture/CoA.lua
 # Battleground matches: the only capture that writes inside a match
 # (ns.InBattleground keeps the rest out). Independent of Instances.
 Capture/Matches.lua
@@ -472,12 +489,9 @@ Features/Hunts/Capture.lua
 # it, as on every event it shares with Capture/
 # (Features/Witnesses/Capture.lua's header).
 Features/Witnesses/Capture.lua
-
 #@do-not-package@
 # Development tooling: diagnostics, /sd art, /sd journey and /sd testdata. They
-# register their own /sd commands. The packager strips this block, so a
-# release never loads them (.pkgmeta leaves the folder out as well, and
-# every Features/*/Dev.lua). A feature's Dev.lua adds its test data to
+# register their own /sd commands. A feature's Dev.lua adds its test data to
 # /sd testdata (TestData.Register), so it comes after Dev/TestData.lua.
 Dev/Art.lua
 Dev/Diagnostics.lua
@@ -506,4 +520,3 @@ Features/Witnesses/Dev.lua
 Features/Hunts/Dev.lua
 Features/Duels/Dev.lua
 Features/Classes/Hunter/Dev.lua
-#@end-do-not-package@

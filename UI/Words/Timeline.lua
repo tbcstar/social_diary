@@ -435,7 +435,7 @@ local function RunStory(episode)
     local runs = {}
     for _, child in ipairs(episode.all) do
         if child.kind == "visit" and child.visit then
-            runs[#runs + 1] = { name = child.visit.name or L["a dungeon"], time = child.time or 0,
+            runs[#runs + 1] = { name = ns.UI.Format.VisitName(child.visit) or L["a dungeon"], time = child.time or 0,
                 raid = child.visit.instanceType == "raid" }
         end
     end
@@ -609,7 +609,7 @@ local TRADES = L["%d trade|%d trades##plural"]
 -- was there and the bosses by name.
 local function VisitText(episode, guid)
     local visit = episode.visit
-    local text = Fmt(L["%1$s, %2$s"], visit.name or L["An instance"], Format.Duration(episode.seconds))
+    local text = Fmt(L["%1$s, %2$s"], ns.UI.Format.VisitName(visit) or L["An instance"], Format.Duration(episode.seconds))
     if visit.difficulty and visit.difficulty ~= "Normal" then
         text = Fmt(L["%1$s (%2$s)##difficulty"], text, visit.difficulty)
     end

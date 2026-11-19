@@ -58,10 +58,20 @@ Eq(ns.RowZone({ mapID = 9999 }), nil, "nothing to call it")
 Eq(ns.MapParent(1412), nil, "a map without a parent")
 
 -- The parent walk behind SIG-5's city check: a city district is the city.
+-- Both halves of the walk are patched: City() asks GetBestMapForUnit for the
+-- player's area and then climbs parents with GetMapInfo. On this client
+-- GetBestMapForUnit is SetMapToCurrentZone + GetCurrentMapAreaID (a region
+-- id, never a district), so the district has to come from the test in both
+-- places or the parent walk would start at Mulgore and never reach 1454.
 local GetMapInfo = C_Map.GetMapInfo
+local GetBestMapForUnit = C_Map.GetBestMapForUnit
 C_Map.GetMapInfo = function(mapID)
     if mapID == 2001 then return { mapID = 2001, name = "Valley of Strength", parentMapID = 1454 } end
     return GetMapInfo(mapID)
+end
+C_Map.GetBestMapForUnit = function(unit)
+    if mock.mapID == 2001 then return 2001 end
+    return GetBestMapForUnit(unit)
 end
 Eq(ns.MapParent(2001), 1454, "the parent map id")
 Eq(ns.MapName(2001), "Valley of Strength", "a district's name")
@@ -69,7 +79,7 @@ mock.mapID = 2001
 Eq(ns.City(), 1454, "a district of a listed city is not the city")
 mock.mapID = 1412
 Eq(ns.City(), nil, "Mulgore read as a city")
-C_Map.GetMapInfo = GetMapInfo
+C_Map.GetMapInfo, C_Map.GetBestMapForUnit = GetMapInfo, GetBestMapForUnit
 
 --------------------------------------------------------------------------
 Section("days")
@@ -188,9 +198,11 @@ Eq(got.lineID, 41, "lineID (11)")
 Eq(got.guid, F.STRANGER.guid, "guid (12)")
 Eq(got.event, "CHAT_MSG_HELPER_TEST", "the event")
 
--- INT-4: a secret GUID, or one that is not a player's, arrives as nil.
+-- INT-4: a GUID that is not a player's arrives as nil. (3.3.5 has no secret
+-- values, so a withheld GUID is an ordinary one here: what remains of
+-- INT-4 on this client is the non-player case below.)
 T.Whisper("CHAT_MSG_HELPER_TEST", "x", "y", 42, mock.secret(F.STRANGER.guid))
-Eq(heard[2].guid, nil, "a secret GUID got through")
+Eq(heard[2].guid, F.STRANGER.guid, "no secret values: a withheld GUID reads")
 Eq(heard[2].lineID, 42, "lineID under lockdown")
 T.Whisper("CHAT_MSG_HELPER_TEST", "x", "y", 43, "Creature-0-4170-1-35-3035-00001")
 Eq(heard[3].guid, nil, "an NPC's GUID got through")

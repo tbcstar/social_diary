@@ -4,7 +4,9 @@
 local addonName, ns = ...
 
 ns.addonName = addonName
-ns.version = C_AddOns and C_AddOns.GetAddOnMetadata(addonName, "Version") or "0.0.0"
+ns.version = (C_AddOns and C_AddOns.GetAddOnMetadata and C_AddOns.GetAddOnMetadata(addonName, "Version"))
+    or (GetAddOnMetadata and GetAddOnMetadata(addonName, "Version"))
+    or "0.0.0"
 
 -- Hooks for the smoke tests, which have no frames, menus or trade window to
 -- drive. Nothing in the addon reads from here; keeping them in one place

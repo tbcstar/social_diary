@@ -5,8 +5,10 @@
 -- at all, and storing someone else's whereabouts is exactly the "tool for
 -- tracking people" reading the PRD sets out to avoid.
 --
--- Session 1 confirmed this build uses the retail map system: GetBestMapForUnit
--- returned 1412 in Mulgore and all four zone-text calls worked.
+-- CoA runs the 3.3.5 map API: GetRealZoneText/GetZoneText are the authority,
+-- and C_Map here is the compatibility layer (Core/Compat/Map.lua) built on
+-- SetMapToCurrentZone/SetMapByID. World positions do not exist on 3.3.5, so
+-- anything measured in yards degrades to nil instead of a made-up number.
 
 local addonName, ns = ...
 
@@ -65,7 +67,7 @@ function ns.Where()
 
     -- 12.0.5 added restricted-map rules, so the position can come back secret
     -- even though the map id did not.
-    local position = C_Map.GetPlayerMapPosition and C_Map.GetPlayerMapPosition(mapID, "player")
+    local position = C_Map and C_Map.GetPlayerMapPosition and C_Map.GetPlayerMapPosition(mapID, "player")
     if position and not ns.IsSecret(position) and position.GetXY then
         local x, y = position:GetXY()
         where.x, where.y = Round(ns.Plain(x)), Round(ns.Plain(y))
@@ -93,6 +95,21 @@ end
 function ns.MapName(mapID)
     local info = MapInfo(mapID)
     return info and ns.Plain(info.name) or nil
+end
+
+-- Display-only translation of a name the client gave. The client here is enUS
+-- even when the diary reads Chinese, so a zone name is English in storage and
+-- turned over only where it is drawn. An unknown name comes back untouched.
+-- Never use the result as a key or write it to SavedVariables.
+function ns.ZoneShown(name)
+    if type(name) ~= "string" or name == "" then return name end
+    local CoA = ns.CoA
+    if CoA and CoA.zhName then return CoA.zhName(name) end
+    return name
+end
+
+function ns.MapNameShown(mapID)
+    return ns.ZoneShown(ns.MapName(mapID))
 end
 
 -- One step up the map tree: a city's districts and a zone's sub-maps have
@@ -176,7 +193,7 @@ end
 -- when the client cannot say. Every call is guarded: none of the three is
 -- verified in this build.
 local function Project(fromMap, toMap, x, y)
-    if not (C_Map.GetWorldPosFromMapPos and C_Map.GetMapPosFromWorldPos and CreateVector2D) then return nil end
+    if not (C_Map and C_Map.GetWorldPosFromMapPos and C_Map.GetMapPosFromWorldPos and CreateVector2D) then return nil end
     local ok, continent, world = pcall(C_Map.GetWorldPosFromMapPos, fromMap, CreateVector2D(x, y))
     if not ok or not world or ns.IsSecret(world) or ns.IsSecret(continent) then return nil end
     local done, _, pos = pcall(C_Map.GetMapPosFromWorldPos, continent, world, toMap)
@@ -208,14 +225,17 @@ end
 -- secret, or on a sub-map that cannot be moved onto its zone. A point that
 -- cannot be placed is skipped, never stored as zone coordinates.
 function ns.ZoneWhere()
-    if IsInInstance and ns.Plain((IsInInstance())) == true then return nil end
+    if IsInInstance then
+        local inside = IsInInstance()
+        if ns.Plain(inside) == true then return nil end
+    end
 
     local best = ns.Plain(C_Map and C_Map.GetBestMapForUnit and C_Map.GetBestMapForUnit("player"))
     if type(best) ~= "number" then return nil end
     local zone = ns.ZoneOf(best)
     if not zone then return nil end
 
-    local position = C_Map.GetPlayerMapPosition and C_Map.GetPlayerMapPosition(best, "player")
+    local position = C_Map and C_Map.GetPlayerMapPosition and C_Map.GetPlayerMapPosition(best, "player")
     if not position or ns.IsSecret(position) or not position.GetXY then return nil end
     local x, y = position:GetXY()
     x, y = ns.Plain(x), ns.Plain(y)
@@ -230,12 +250,28 @@ function ns.ZoneWhere()
 end
 
 -- Where the user stands in the world, in yards, and the instance id that
--- says which world: x, y, instance (UnitPosition hands y first), or nil. Outdoors only; thresholds are measured in these, never in map
--- units, which are a different distance in every zone (JRN-1).
+-- says which world: x, y, instance (UnitPosition hands y first), or nil.
+-- UnitPosition does not exist on 3.3.5 and the Compat layer supplies one that
+-- returns nothing, so this is nil there and no threshold is ever invented
+-- from map units (they are a different distance in every zone).
+--
+-- Close enough to interact: the client's own visibility test plus its own
+-- interact ranges (CheckInteractDistance's four indices), never a guessed
+-- distance. Visible-but-far is not "here".
 function ns.WorldWhere()
     if not UnitPosition then return nil end
     local y, x, _, instance = UnitPosition("player")
     x, y, instance = ns.Plain(x), ns.Plain(y), ns.Plain(instance)
     if type(x) ~= "number" or type(y) ~= "number" then return nil end
     return x, y, instance
+end
+
+function ns.Near(unit)
+    if type(unit) ~= "string" then return false end
+    if UnitIsVisible and not ns.Plain(UnitIsVisible(unit)) then return false end
+    if not CheckInteractDistance then return true end
+    for index = 1, 4 do
+        if CheckInteractDistance(unit, index) then return true end
+    end
+    return false
 end

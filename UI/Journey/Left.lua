@@ -222,7 +222,8 @@ local function EntryItems(recap, now, fights)
                     for _, sub in ipairs(subs) do
                         local visit, session, m = sub.visit, sub.session, sub.match
                         if visit then
-                            Add({ run = visit, label = visit.name or L["An instance"], entry = i, height = SITTINGS.runRow,
+                            Add({ run = visit, label = ns.UI.Format.VisitName(visit) or L["An instance"], entry = i,
+                                height = SITTINGS.runRow,
                                 current = page.mode == "run" and page.runVisit == visit.id })
                         elseif m then
                             Add({ bg = session, match = m, label = Text.MatchLine(m), entry = i,

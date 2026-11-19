@@ -19,9 +19,17 @@ local function BuildRecording(pane, c)
 
     -- JRN-17: the timer starts and stops at once.
     c:Heading(L["Your Diary"])
+    -- CoA: this client has no world-space position (UnitPosition and
+    -- C_Map.GetWorldPosFromMapPos are retail; Core/Compat leaves both nil),
+    -- so the roads and the places the character lingers cannot be measured.
+    -- The switch still turns the timer on: levels, dungeons and fights are
+    -- placed by zone-map fraction and are kept. /sd journey stats reports
+    -- "no world position (UnitPosition)" for every tick that took none.
+    local measurable = ns.WorldWhere() ~= nil
     page.keepRoute = Switch(c, L["Keep my own route"], "keepRoute", nil,
         function(on) ns.JourneyCapture.SetEnabled(on) end,
-        L["Data needed for the 'Your Diary' Page: Where you go and what you do."])
+        measurable and L["Data needed for the 'Your Diary' Page: Where you go and what you do."]
+            or L["This game client cannot measure distances: where you level, your dungeons and your fights are still kept, but the roads and the stops between them cannot be recorded."])
 
     c:Heading(L["Chat"])
     -- INT-4 asks for the hint to be said in the settings.
@@ -52,16 +60,20 @@ local function BuildRecording(pane, c)
     -- shows after a reload.
     c:Hint(L["Enable sightings in cities - performance warning:"], INDENT)
     local cities = Capture.Cities()
+    -- `shown` is what the reader sees; the row keeps its own key untouched
+    -- (display-time translation only: the CoA name table is Chinese-only in
+    -- this build, and a saved city key must never be turned over).
     for _, city in ipairs(cities) do
-        city.name = type(city.key) == "number" and (ns.MapName(city.key) or Fmt(L["map %s"], city.key)) or city.key
+        city.shown = type(city.key) == "number"
+            and (ns.MapNameShown(city.key) or Fmt(L["map %s"], city.key)) or city.key
     end
-    table.sort(cities, function(a, b) return a.name < b.name end)
+    table.sort(cities, function(a, b) return a.shown < b.shown end)
 
     local half = (c.width - INDENT) / 2
     local left
     page.cities = {}
     for i, city in ipairs(cities) do
-        local box = Style.Checkbox(c.parent, half - 8, city.name,
+        local box = Style.Checkbox(c.parent, half - 8, city.shown,
             function() return Saved().cities[city.key] ~= true end,
             function(on) Capture.SetCity(city.key, not on) end)
         if i % 2 == 1 then

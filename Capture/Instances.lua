@@ -30,6 +30,40 @@ local function Flag(fn, ...)
     return ns.Plain(fn(...)) == true
 end
 
+-- A dungeon record may be a name or the record itself.
+local function Titled(entry)
+    if type(entry) == "string" then return entry end
+    if type(entry) == "table" then return entry.name end
+end
+
+-- Which dungeon this is, the CoA way: the map area first, the zone name
+-- second, the CoA table last (Core/Dungeons.ByMapID and ByZone do exactly
+-- that lookup; they are read lazily because Core/Dungeons is loaded before
+-- this file and may have been written before these two existed).
+local function Titled2(mapID, zone)
+    local dungeons = ns.Dungeons
+    local title
+    if type(mapID) == "number" and dungeons and dungeons.ByMapID then
+        local ok, entry = pcall(dungeons.ByMapID, mapID)
+        if ok then title = Titled(entry) end
+    end
+    if not title and zone and dungeons and dungeons.ByZone then
+        local ok, entry = pcall(dungeons.ByZone, zone)
+        if ok then title = Titled(entry) end
+    end
+    return title
+end
+
+-- The zone the client puts the player in, for the fallback above.
+local function ZoneName()
+    local zone = GetRealZoneText and ns.Plain(GetRealZoneText()) or nil
+    if type(zone) ~= "string" or zone == "" then
+        zone = GetSubZoneText and ns.Plain(GetSubZoneText()) or nil
+    end
+    if type(zone) ~= "string" or zone == "" then zone = nil end
+    return zone
+end
+
 -- In a party or raid instance now: its info, or nil.
 local function Here()
     if not IsInInstance then return nil end
@@ -39,9 +73,28 @@ local function Here()
     if kind ~= "party" and kind ~= "raid" then return nil end
     local name, _, difficultyID, difficulty, _, _, _, id = GetInstanceInfo()
     id = ns.Plain(id)
+    -- WotLK's GetInstanceInfo gives seven values, not eight (FrameXML's own
+    -- copy at Util/GlobalOverwrites.lua:419 returns name through isDynamic),
+    -- so on CoA the id above is always nil. A run still needs a key: the map
+    -- area the client puts the player on will do, though Dungeon Crawler's
+    -- record is keyed by the id itself, so a run opened this way has no
+    -- dungeon (Core/Dungeons.Known finds nothing) and is named by the zone.
+    local mapID = GetCurrentMapAreaID and ns.Plain(GetCurrentMapAreaID()) or nil
+    if type(mapID) ~= "number" then mapID = nil end
+    if type(id) ~= "number" then id = mapID end
     if type(id) ~= "number" then return nil end
-    return { instanceID = id, name = ns.Plain(name), instanceType = kind,
-        difficultyID = ns.Plain(difficultyID), difficulty = ns.Plain(difficulty) }
+    name = ns.Plain(name)
+    if type(name) ~= "string" or name == "" then name = nil end
+    local zone = ZoneName()
+    -- The client names most instances itself; when it does not (a CoA
+    -- instance the client has no entry for), Core/Dungeons answers.
+    if not name then name = Titled2(mapID, zone) end
+    return { instanceID = id, name = name, instanceType = kind,
+        difficultyID = ns.Plain(difficultyID), difficulty = ns.Plain(difficulty),
+        -- Advisory: Core/Instances.Enter keeps its own field list, so these
+        -- two are here for readers that want the map and stay out of the run
+        -- record until Core asks for them.
+        mapID = mapID, zone = zone }
 end
 
 local function Check()

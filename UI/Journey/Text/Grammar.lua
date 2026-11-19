@@ -63,8 +63,16 @@ end
 local function Capital(text) return G.Capital(text) end
 local function Upper(text) return G.Upper(text) end
 
-local function MapName(mapID)
+-- A map's name for the reader: rows keep the map id (DAT-3) and this client
+-- names maps in English, so the CoA name table turns the name over where it
+-- is drawn (ns.MapNameShown, Core/Location.lua). RawMapName is the client's
+-- own name, kept for the places that compare a name with one the diary
+-- saved — a translation must never be compared with an original.
+local function RawMapName(mapID)
     return mapID and ns.MapName(mapID) or nil
+end
+local function MapName(mapID)
+    return mapID and ns.MapNameShown(mapID) or nil
 end
 
 local function Who(guid)
@@ -74,8 +82,9 @@ end
 -- A place: "Lushwater Oasis, The Barrens", or the zone alone.
 local function Place(mapID, subZone)
     local zone = MapName(mapID)
-    if subZone and zone and subZone ~= zone then return Fmt(L["%1$s, %2$s"], subZone, zone) end
-    return subZone or zone
+    local place = subZone and ns.ZoneShown(subZone) or nil
+    if place and zone and place ~= zone then return Fmt(L["%1$s, %2$s"], place, zone) end
+    return place or zone
 end
 Text.Place = Place
 
@@ -204,7 +213,8 @@ end
 --   Duration(seconds)     "1 h 33 min", glued
 --   Spoken(seconds)       "twenty minutes", "an hour and a half"
 --   Capital(text)         its first letter capitalised
---   MapName(mapID)        a map's name, or nil
+--   MapName(mapID)        a map's name as the reader sees it, or nil
+--   RawMapName(mapID)     the client's own name for it, or nil (comparisons)
 --   Who(guid)             a character's full name, else their name
 --   Short(guid)           their first name (a margin note's)
 --   Day(t, now)           "6 October", the year once it is not this one's
@@ -225,6 +235,7 @@ end
 -- by UI/Journey/Text/Time.lua, Written by UI/Journey/Text/Notes.lua, the
 -- rest here.
 Text.Glue, Text.Capital, Text.MapName, Text.Who = Glue, Capital, MapName, Who
+Text.RawMapName = RawMapName
 Text.Upper = Upper
 Text.Times, Text.NUMBER, Text.Count, Text.ItemWord, Text.Items = Times, NUMBER, Count, ItemWord, Items
 Text.Health, Text.Counts = Health, Counts

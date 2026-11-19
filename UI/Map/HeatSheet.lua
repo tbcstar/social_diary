@@ -82,7 +82,7 @@ local BLOT = {
 local KEY = { swatch = 8, step = 10, also = 6 }
 
 local function MapName(mapID)
-    return ns.MapName(mapID) or Fmt(L["Map %d"], mapID)
+    return ns.MapNameShown(mapID) or Fmt(L["Map %d"], mapID)
 end
 
 local function HeatColor(t)
@@ -471,7 +471,7 @@ function ns.UI.MapSheet.New(parent)
         end
         if not known then
             -- Where the user is now, if they have history here; else the busiest.
-            local here = ns.Plain(C_Map.GetBestMapForUnit and C_Map.GetBestMapForUnit("player"))
+            local here = ns.Plain(C_Map and C_Map.GetBestMapForUnit and C_Map.GetBestMapForUnit("player"))
             self.mapID = maps[1].mapID
             for i = 1, #maps do
                 if maps[i].mapID == here then self.mapID = here end

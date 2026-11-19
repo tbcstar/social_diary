@@ -93,9 +93,13 @@ Eq(ns.Characters.FullName(RHEA), "Rhea Silvia", "an emote's sender not observed"
 Eq(ns.db.sightings[RHEA][1].src, "emote", "an emote is not a sighting")
 Eq(ns.db.sightings[RHEA][1].level, nil, "chat invented a level")
 
+-- (3.3.5 has no secret values: a withheld sender is an ordinary one and the
+-- line is captured like any other — nothing to lock down.)
 mock.fire("CHAT_MSG_SAY", "hi", mock.secret("Remus"), "", "", "", "", 0, 0, "", 0, 82,
     mock.secret("Player-4620-00AAAA04"))
-Eq(Capture.QueueLength(), 0, "a chat-lockdown line was queued")
+Drain()
+Eq(Capture.QueueLength(), 0, "a withheld sender drained like any other line")
+Eq(ns.Characters.FullName("Player-4620-00AAAA04"), "Remus", "a withheld sender was not observed")
 
 -- SIG-8's frame budget: at most 10 per frame, fewer when each is expensive.
 local function Crowd(n, from)

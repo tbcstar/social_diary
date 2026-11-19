@@ -520,7 +520,8 @@ function DungeonPage.Sheet(parent)
         DungeonPage.ClearNotes(view)
         view.plan, view.box, view.kept, view.scale, view.From, view.At = nil, nil, nil, nil, nil, nil
         DungeonPage.WayLaid(view)
-        view.none:SetText(ns.Fmt(ns.L["The diary has no map of %s yet."], visit.name or ns.L["this place"]))
+        view.none:SetText(ns.Fmt(ns.L["The diary has no map of %s yet."],
+            ns.UI.Format.VisitName(visit) or ns.L["this place"]))
         K.PlaceText(view.none, W / 2, H / 2, "CENTER")
         view.none:Show()
     end

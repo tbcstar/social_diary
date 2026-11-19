@@ -10,6 +10,10 @@ local STRANGER, SELF = F.STRANGER, F.SELF
 --------------------------------------------------------------------------
 Section("bootstrap")
 
+-- The first load of all: 3.3.5 restores SavedVariables before an addon loads,
+-- and the suite's Reset leaves a language choice saved, so this test puts
+-- the empty state back to model a character whose diary never existed.
+_G.SocialDiaryDB = nil
 local ns = T.Load()
 mock.SetUnit("player", SELF)
 
@@ -131,8 +135,9 @@ Section("GUIDs")
 Check(ns.SafeGUID("Player-4620-00B0B0B0"), "player GUID rejected")
 Check(not ns.SafeGUID("Creature-0-4620-1-6-3098-00002C5F0C"), "creature GUID accepted")
 Check(not ns.SafeGUID(nil), "nil GUID accepted")
-Check(not ns.SafeGUID(mock.secret("Player-1-2")), "secret GUID accepted")
-Eq(ns.SafeGUID(mock.secret("Player-1-2")), nil, "secret GUID survived SafeGUID")
+-- 3.3.5 has no secret values: retail's Forbidden GUID reads like any other
+-- player GUID, and SafeGUID (whose retail branch refused one) accepts it.
+Eq(ns.SafeGUID(mock.secret("Player-1-2")), "Player-1-2", "no secret values: a withheld GUID reads normally")
 Eq(ns.SafeGUID("Player-4620-00B0B0B0"), "Player-4620-00B0B0B0", "plain GUID lost")
 
 --------------------------------------------------------------------------
@@ -155,8 +160,9 @@ Eq(Name("Bram Redfen-ClassicBetaPvE"), "Bram/Redfen", "joined name with a realm 
 Eq(Name("Unknown"), "nil/nil", "placeholder name stored")
 Eq(Name(nil), "nil/nil", "nil name")
 Eq(Name(""), "nil/nil", "empty name")
-Eq(Name(mock.secret("Bram"), mock.secret("Redfen")), "nil/nil", "secret name survived")
-Eq(Name("Bram", mock.secret("Redfen")), "Bram/nil", "secret surname survived")
+-- No secret values on 3.3.5: names retail withheld are ordinary strings.
+Eq(Name(mock.secret("Bram"), mock.secret("Redfen")), "Bram/Redfen", "a withheld name reads normally")
+Eq(Name("Bram", mock.secret("Redfen")), "Bram/Redfen", "a withheld surname reads normally")
 
 Eq(ns.JoinName("Bram", "Redfen"), "Bram Redfen", "join")
 Eq(ns.JoinName("Bram", nil), "Bram", "join without a surname")
@@ -229,8 +235,9 @@ Eq(own.isSelf, true, "own character not marked")
 Eq(ns.Characters.Get(STRANGER.guid).isSelf, nil, "stranger marked as self")
 
 Eq(ns.Characters.Get("Creature-0-4620-1-6-3098-1"), nil, "creature GUID got a record")
-Eq(ns.Characters.Observe(mock.secret("Player-1-2"), {}), nil, "secret GUID got a record")
-Eq(ns.Characters.Count(), 2, "unexpected number of characters")
+-- 3.3.5 keeps no secret GUIDs: the GUID is ordinary text, so it is kept.
+Check(ns.Characters.Observe(mock.secret("Player-1-2"), {}) ~= nil, "no secret values: a withheld GUID gets a record")
+Eq(ns.Characters.Count(), 3, "unexpected number of characters")
 
 -- The no-unit-token path (DIA-2a): a GUID alone still yields a record.
 mock.SetUnit("nobody", F.Player{ guid = "Player-4620-00999999", "Garrick", "Fallow",
@@ -258,17 +265,23 @@ Eq(ns.Characters.FullName(UPGRADE), "Mad Claw", "placeholder not upgraded")
 Eq(record.level, 12, "level not picked up by the fuller read")
 
 --------------------------------------------------------------------------
-Section("secret safety (NFR-4, INT-5)")
+Section("secret safety (NFR-4, INT-5) -- not on 3.3.5")
 
--- Written out rather than F.Like(STRANGER): with no UnitFullName to fall
--- back on, a secret UnitName leaves nothing readable.
+-- Retail withheld some values in combat through the secret-value system;
+-- 3.3.5a has no such system (issecretvalue does not exist and Core/Compat/
+-- Env.lua answers false), so a value retail would have withheld reads like
+-- any other. These cases assert the 3.3.5 truth; the retail withholding
+-- itself is still exercised by FORCE_RETAIL=1.
+local WITHHELD = "Player-4620-00B0B0B0"
 mock.SetUnit("target", {
-    guid = mock.secret("Player-4620-00B0B0B0"),
+    guid = mock.secret(WITHHELD),
     name = { mock.secret("Bram"), mock.secret("Redfen") },
     class = STRANGER.class, race = STRANGER.race,
     sex = 2, level = 1, faction = STRANGER.faction,
 })
-Eq(ns.Characters.ObserveUnit("target"), nil, "a secret GUID produced a record")
+record = ns.Characters.ObserveUnit("target")
+Check(record, "no secret values: a GUID retail withheld is kept")
+Eq(ns.Characters.FullName(WITHHELD), "Bram Redfen", "the withheld name is stored and read back")
 
 mock.SetUnit("target", {
     guid = "Player-4620-00570A8F",
@@ -277,11 +290,11 @@ mock.SetUnit("target", {
     sex = 2, level = mock.secret(1), faction = STRANGER.faction,
 })
 record = ns.Characters.ObserveUnit("target")
-Check(record, "a readable GUID with a secret name should still be recorded")
-Eq(#record.names, 0, "a secret name was stored")
-Eq(ns.Characters.FullName("Player-4620-00570A8F"), nil, "a secret name came back out")
-Eq(record.level, nil, "a secret level was stored")
-Eq(record.class, "DRUID", "the plain fields were dropped along with the secret ones")
+Check(record, "a readable GUID is recorded")
+Eq(#record.names, 1, "the withheld name is stored")
+Eq(ns.Characters.FullName("Player-4620-00570A8F"), "Bram Redfen", "the withheld name came back out")
+Eq(record.level, 1, "the withheld level is stored")
+Eq(record.class, "DRUID", "the plain fields are stored too")
 
 --------------------------------------------------------------------------
 Section("location")
@@ -326,7 +339,7 @@ mock.SetUnit("nameplate3", { guid = "Creature-0-4170-1-35-3035-00002", name = { 
 Eq(ns.PlayerGUIDFromUnit("target", V), NEAR.guid, "a drawn player")
 Eq(ns.PlayerGUIDFromUnit("mouseover"), FAR.guid, "an undrawn player, visibility not asked for")
 Eq(ns.PlayerGUIDFromUnit("mouseover", V), nil, "an undrawn player counted as visible")
-Eq(ns.PlayerGUIDFromUnit("focus"), nil, "a secret GUID")
+Eq(ns.PlayerGUIDFromUnit("focus"), "Player-4620-00EEEE03", "no secret values: a withheld GUID reads")
 Eq(ns.PlayerGUIDFromUnit("nameplate3"), nil, "an NPC")
 Eq(ns.PlayerGUIDFromUnit("player"), nil, "the user")
 Eq(ns.PlayerGUIDFromUnit("player", { includeSelf = true }), SELF.guid, "the user, with includeSelf")

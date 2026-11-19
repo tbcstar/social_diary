@@ -40,12 +40,35 @@ local FOOTER = L["The full history is on CurseForge and GitHub."]
 local THANKS = L["Thanks to %s"]
 local VERSION = L["Version %s"]
 -- The groups' headings, as CHANGELOG.md names them (.claude/rules/changelog.md):
--- the data stays English, the heading shown is the reader's.
+-- the data stays English, the heading shown is the reader's. The data
+-- capitalises "Shiny new Things" both ways ("Shiny New Things" in 4.0.1 and
+-- 4.0.0), so the lookup folds case rather than missing and showing English.
 local GROUP = {
-    ["Shiny new Things"] = L["Shiny new Things"],
-    ["Changes"] = L["Changes"],
-    ["Fixes"] = L["Fixes"],
+    ["shiny new things"] = L["Shiny new Things"],
+    ["changes"] = L["Changes"],
+    ["fixes"] = L["Fixes"],
 }
+
+local function GroupHeading(heading)
+    local said = GROUP[string.lower(heading or "")]
+    return said or heading
+end
+
+-- The changelog's own words in Chinese are looked up while it is drawn, not
+-- written into the data: Core/ChangelogData.lua must stay a literal copy of
+-- CHANGELOG.md (tests/changelog.lua holds it to that), and a reader of any
+-- other language keeps the English. Locales/zhCN/Changelog.lua supplies
+-- ns.Locale.ChangelogZh(version, index, fallback); index counts the
+-- release's text items in the order this page shows them (1 = the first
+-- entry or sub-entry), 0 being its summary. A helper that is missing, or
+-- that errors, leaves the English exactly as it is.
+local function ChangelogZh(version, index, fallback)
+    local said = ns.Locale and ns.Locale.ChangelogZh
+    if type(said) ~= "function" then return fallback end
+    local ok, text = pcall(said, version, index, fallback)
+    if not ok or type(text) ~= "string" or text == "" then return fallback end
+    return text
+end
 
 -- The column: the list's own width less its scrollbar.
 local LIST_W = BOOK.RIGHT_W
@@ -140,17 +163,26 @@ local function Lines(releases)
     local function Add(line) lines[#lines + 1] = line end
     for i, release in ipairs(releases or {}) do
         if i > 1 then Add({ kind = "divider", height = DIVIDER.height }) end
-        Add(Line("version", Fmt(VERSION, release.version)))
-        if release.summary and release.summary ~= "" then Add(Line("summary", Emphasis(release.summary))) end
+        local version = release.version
+        -- (the version is a number, the same in every language)
+        Add(Line("version", Fmt(VERSION, version)))
+        if release.summary and release.summary ~= "" then
+            Add(Line("summary", Emphasis(ChangelogZh(version, 0, release.summary))))
+        end
+        -- The release's text items, numbered as the Chinese looks them up:
+        -- entries and their sub-entries in the order they are shown here.
+        local item = 0
         for g, group in ipairs(release.groups or {}) do
             -- (its paraph red, then lapis, by turns, as the timeline's days)
-            local heading = Line("group", Style.Upper(GROUP[group.heading] or group.heading))
+            local heading = Line("group", Style.Upper(GroupHeading(group.heading)))
             heading.lapis = g % 2 == 0
             Add(heading)
             for _, entry in ipairs(group.entries or {}) do
-                Add(Line("entry", Emphasis(entry.text), entry.thanks))
+                item = item + 1
+                Add(Line("entry", Emphasis(ChangelogZh(version, item, entry.text)), entry.thanks))
                 for _, sub in ipairs(entry.sub or {}) do
-                    Add(Line("sub", Emphasis(sub.text), sub.thanks))
+                    item = item + 1
+                    Add(Line("sub", Emphasis(ChangelogZh(version, item, sub.text)), sub.thanks))
                 end
             end
         end

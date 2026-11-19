@@ -71,6 +71,11 @@ local function Here()
     if P(inside) ~= true or P(kind) ~= "pvp" then return nil end
     local name, _, _, _, _, _, _, id = GetInstanceInfo()
     id = P(id)
+    -- WotLK's GetInstanceInfo may not give the instance's id as its eighth
+    -- value (PORT.md §1 says the function exists, not that it gives eight).
+    -- A match needs a key more than that id: the map area the client puts
+    -- the player on will do.
+    if type(id) ~= "number" and GetCurrentMapAreaID then id = P(GetCurrentMapAreaID()) end
     if type(id) ~= "number" then return nil end
     return { map = id, mapName = P(name) }
 end
@@ -228,7 +233,9 @@ local function OwnName()
 end
 
 local function Sessions()
-    if not (C_DamageMeter and C_DamageMeter.GetAvailableCombatSessions) then return {} end
+    -- Is there a damage meter at all? One answer, ns.HasDamageMeter
+    -- (Features/CloseCalls/Kind.lua): CoA has none, so this is {} there.
+    if not (ns.HasDamageMeter() and C_DamageMeter.GetAvailableCombatSessions) then return {} end
     local ok, list = pcall(C_DamageMeter.GetAvailableCombatSessions)
     if not ok or type(list) ~= "table" or ns.IsSecret(list) then return {} end
     local out = {}
@@ -281,7 +288,7 @@ local fightEnds = {}   -- epoch seconds your fights ended, not yet walked
 
 -- Writes every session since the last walk as a fight.
 local function Walk(match)
-    if not (C_DamageMeter and C_DamageMeter.GetCombatSessionFromID) then return end
+    if not (ns.HasDamageMeter() and C_DamageMeter.GetCombatSessionFromID) then return end
     match.meter = match.meter or { from = Highest(), seen = nil }
     local meter = match.meter
     meter.seen = meter.seen or meter.from
@@ -449,7 +456,7 @@ local function Open(info)
     if new then
         ns.Debug("Match opened: %s (%s).", tostring(info.mapName), tostring(info.map))
         -- The meter's sessions so far are the world's; the match's start after.
-        if C_DamageMeter then match.meter = { from = Highest() } end
+        if ns.HasDamageMeter() then match.meter = { from = Highest() } end
     end
     if RequestBattlefieldScoreData then pcall(RequestBattlefieldScoreData) end
     Gather(true)
@@ -494,7 +501,11 @@ local function ReadBoard(match)
         local p = ScoreRow(i, true)
         if p then
             rows[#rows + 1] = p
-            if p.guid then readable = readable + 1 end
+            -- WotLK's board need not expose a GUID (the score packet carries
+            -- one; the client's row is not obliged to): a row whose numbers
+            -- read is the board's own, one that has only a name is a secret
+            -- board's. Either way the name identifies its player.
+            if p.guid or (p.name and type(p.kb) == "number") then readable = readable + 1 end
         end
     end
     if readable == 0 then return false end
@@ -606,7 +617,13 @@ ns.On("PVP_MATCH_STATE_CHANGED", function()
         Matches.Began(match)
     end
 end)
-ns.On("PVP_MATCH_COMPLETE", function(_, winner, duration) Complete(winner, duration) end)
+ns.On("PVP_MATCH_COMPLETE", function(_, winner, duration)
+    -- One end, one complete: the WotLK status path below may have got there
+    -- first on a client that has both.
+    local match = Matches.Current()
+    if match and match.completeAt then return end
+    Complete(winner, duration)
+end)
 ns.On("UPDATE_BATTLEFIELD_SCORE", function() Gather(false) end)
 ns.On("GROUP_ROSTER_UPDATE", function() Gather(false) end)
 ns.On("NAME_PLATE_UNIT_ADDED", function(_, unit) Unit(unit) end)
@@ -619,3 +636,63 @@ ns.Every(ASK_EVERY, function()
     Gather(false)
 end)
 ns.Every(60, function() Matches.Expire() end)
+
+--------------------------------------------------------------------------
+-- The end on WotLK (there is no PVP_MATCH_COMPLETE there)
+--------------------------------------------------------------------------
+--
+-- The WotLK client tells a match's end through the battlefield's status and
+-- its scoreboard, not through the retail match events: the status turns
+-- "complete" and UPDATE_BATTLEFIELD_SCORE follows. Read through the 3.3.5
+-- names — GetBattlefieldStatus, GetBattlefieldWinner,
+-- GetBattlefieldInstanceRunTime — and only when the client has them, so a
+-- client that speaks the retail events is unaffected (PVP_MATCH_COMPLETE
+-- completes the match once, and this path then finds it complete).
+-- Unproven on CoA: a status that never says "complete" leaves the record as
+-- the leaving path makes it ("left").
+
+-- The winner the client names, or nil while it is still being fought. The
+-- WotLK client itself uses this as its "the match is over" test
+-- (WorldStateFrame.lua:352 filters the leaving messages on it), which is
+-- what makes it a better end than the queue status: a status is only there
+-- while the queue still holds the battleground.
+local function Won()
+    if not GetBattlefieldWinner then return nil end
+    local winner = Call(GetBattlefieldWinner)
+    if winner == 0 or winner == 1 then return winner end
+    return nil
+end
+
+local function Ended()
+    local over, winner = false, Won()
+    if winner then over = true end
+    if not over and GetBattlefieldStatus then
+        for i = 1, 3 do
+            local ok, status = pcall(GetBattlefieldStatus, i)
+            if ok and P(status) == "complete" then
+                over = true
+                winner = Call(GetBattlefieldWinner)
+                break
+            end
+        end
+    end
+    if not over then return nil end
+    local duration = Call(GetBattlefieldInstanceRunTime)
+    if type(duration) == "number" then duration = duration / 1000 end
+    return true, winner, duration
+end
+ns._test.MatchEnded = Ended
+
+local function Over()
+    local match = Matches.Current()
+    if not match or match.completeAt then return end
+    local over, winner, duration = Ended()
+    if not over then return end
+    Complete(winner, duration)
+end
+
+ns.On("UPDATE_BATTLEFIELD_STATUS", function() Over() end)
+-- The board is what follows the end, and it is asked for while the match
+-- runs: a winner named on it ends the match even on a client whose queue
+-- status never says "complete".
+ns.On("UPDATE_BATTLEFIELD_SCORE", function() Over() end)

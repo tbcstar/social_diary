@@ -10,9 +10,16 @@ local L = ns.L
 
 local category
 
+-- Retail keeps its options in SettingsPanel; this client (3.3.5a body with
+-- Ascension's FrameXML) uses InterfaceOptionsFrame, which is where the
+-- Settings shim (Core/Compat) hangs the category this page is registered in.
+-- Both are closed here, or the frame would stay over the book it sends you to.
 local function CloseBlizzardSettings()
     if SettingsPanel and SettingsPanel:IsShown() then
         if HideUIPanel then HideUIPanel(SettingsPanel) else SettingsPanel:Hide() end
+    end
+    if InterfaceOptionsFrame and InterfaceOptionsFrame:IsShown() then
+        if HideUIPanel then HideUIPanel(InterfaceOptionsFrame) else InterfaceOptionsFrame:Hide() end
     end
 end
 
@@ -23,7 +30,7 @@ local function Register()
     end
 
     local sign = CreateFrame("Frame")
-    local title = ns.UI.Chrome.Label(sign, "Social Diary", "GameFontHighlightLarge")
+    local title = ns.UI.Chrome.Label(sign, L["Social Diary"], "GameFontHighlightLarge")
     title:SetPoint("TOPLEFT", 16, -16)
 
     local text = ns.UI.Chrome.Label(sign,
@@ -37,7 +44,9 @@ local function Register()
     end)
     sign.open:SetPoint("TOPLEFT", text, "BOTTOMLEFT", 0, -14)
 
-    category = Settings.RegisterCanvasLayoutCategory(sign, "Social Diary")
+    -- The category's name is also the name Settings.OpenToCategory is asked
+    -- for by hand, so it goes through the locale like every other string.
+    category = Settings.RegisterCanvasLayoutCategory(sign, L["Social Diary"])
     Settings.RegisterAddOnCategory(category)
 end
 

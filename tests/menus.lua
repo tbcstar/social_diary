@@ -25,9 +25,11 @@ Eq(Path({ guid = GUID }), "guid", "an explicit GUID should win")
 Eq(Path({ unit = "target" }), "unit", "the target-frame path")
 Eq(Path({ unit = "nosuchunit" }), "failed", "a dead unit token resolved to something")
 
--- The chat-name path, which is the one Session 1 could not settle.
+-- The chat-name path: retail asks C_PlayerInfo.GetGUIDFromPlayerLocation,
+-- which 3.3.5 does not have, so the addon falls back to the name it last
+-- saw (Capture/Menus.lua) and this shape resolves to nothing.
 mock.locationGUID = GUID
-Eq(Path({ playerLocation = {} }), "playerLocation", "the chat-name path")
+Eq(Path({ playerLocation = {} }), "failed", "no player-location API: the chat-name path falls back")
 mock.locationGUID = nil
 Eq(Path({ playerLocation = {} }), "failed", "chat-name path invented a GUID")
 
@@ -87,14 +89,14 @@ mock.SetUnit("self", F.SELF)
 Eq(#mock.OpenMenu("MENU_UNIT_PLAYER", { unit = "self" }), 0, "offered to remember the user")
 Eq(#mock.OpenMenu("MENU_UNIT_PLAYER", { isSelf = true }), 0, "isSelf context not honoured")
 
--- Anything added to a menu on a secret unit taints its layout, and Blizzard's
--- arithmetic on the (secret) menu size then errors. So the menu is left
--- alone on a secret unit, and on anybody the addon cannot identify.
+-- No restricted values on 3.3.5: a withheld GUID and name read plainly, so
+-- the menu is built for them like for anybody else. The guards that survive
+-- are the ones for units the addon cannot identify (below).
 mock.SetUnit("target", { guid = mock.secret(GUID), name = { mock.secret("Bram") } })
-Eq(#mock.OpenMenu("MENU_UNIT_PLAYER", { unit = "target", name = "Bram", surname = "Redfen" }), 0,
-    "the menu on a secret unit was touched (the name fallback must not rescue it)")
-Eq(#mock.OpenMenu("MENU_UNIT_PLAYER", { name = mock.secret("Bram") }), 0,
-    "the menu on a secret name was touched")
+Eq(#mock.OpenMenu("MENU_UNIT_PLAYER", { unit = "target", name = "Bram", surname = "Redfen" }), 1,
+    "no restricted values: the menu on a withheld unit is built")
+Eq(#mock.OpenMenu("MENU_UNIT_PLAYER", { name = mock.secret("Bram") }), 1,
+    "no restricted values: the menu on a withheld name is built")
 mock.SetUnit("target", { guid = "Creature-0-4620-1-6-3098-1", name = { "Kobold Vermin" }, isPlayer = false })
 Eq(#mock.OpenMenu("MENU_UNIT_TARGET", { unit = "target" }), 0, "an NPC was offered an entry")
 Eq(#mock.OpenMenu("MENU_UNIT_PLAYER", { name = "Nobody" }), 0, "an unidentified character was offered an entry")

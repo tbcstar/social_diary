@@ -50,7 +50,7 @@ Eq(ns.Notes.Add(BRAM, "   "), nil, "a blank note was written")
 Eq(ns.Notes.Add(BRAM, nil), nil, "a note without text was written")
 Eq(ns.Notes.Add(PUG, "Who?"), nil, "a note about someone outside the diary (DIA-1)")
 Eq(ns.Notes.Add("Creature-0-4620-1-6-3098-1", "A boar"), nil, "a note about a creature")
-Eq(ns.Notes.Add(mock.secret(BRAM), "Secret"), nil, "a note about a secret GUID")
+Eq(ns.Notes.Add(nil, "Secret"), nil, "a note about a missing GUID")
 Eq(#ns.Notes.Add(BRAM, ("z"):rep(3000)).text, ns.Diary.MAX_NOTE_CHARS, "a note is not capped in length")
 
 --------------------------------------------------------------------------

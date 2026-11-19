@@ -224,7 +224,8 @@ local function TimelineLines(items, guid)
             if (visit.deaths or 0) > 0 then losses[#losses + 1] = ns.Plural(visit.deaths, L["%d death|%d deaths##plural"]) end
             local wipes = ns.DungeonRun.Wipes(visit)
             if wipes > 0 then losses[#losses + 1] = ns.Plural(wipes, L["%d wipe|%d wipes##plural"]) end
-            lines[#lines + 1] = { item = item, when = when, text = visit.name or L["An instance"],
+            lines[#lines + 1] = { item = item, when = when,
+                text = ns.UI.Format.VisitName(visit) or L["An instance"],
                 font = FONT.runTitle, depth = item.depth, full = full, height = VISIT.height,
                 visit = { visit = visit, aside = aside, losses = ns.UI.TimelineText.Join(losses),
                     members = OtherMembers(visit, guid) } }

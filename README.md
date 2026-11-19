@@ -1,101 +1,113 @@
-# Social Diary
+# Social Diary · CoA 版
 
-A World of Warcraft addon that remembers the people you meet in the open world.
+一个记录你在这片世界上遇见谁的魔兽插件：和谁组过队、和谁交易过、谁在密语里
+找过你、谁和你并肩或对砍过、谁杀过你、路上瞥见过谁，以及你们后来又重逢在
+哪一天。它同样记下你自己的旅程——等级、第一次、走过的区域、千钧一发、幸运
+掉落、长任务线的终点、专业上限——全部自动写进一本纸质手账。
 
-You group with a stranger for an hour in the Barrens, trade a few potions with
-someone in Redridge, get killed twice by the same rogue in Hillsbrad. A week
-later you meet one of them again and can't place the name. Social Diary writes
-these meetings down for you: who you grouped with, traded with, whispered,
-fought beside or against, who killed you, who you saw along the road, and when
-you met again.
+本仓库是 [Social Diary](https://github.com/social-diary/social_diary) 4.2.0 的
+**Conquest of Azeroth（CoA）移植版**：目标客户端是 **3.3.5a（WotLK）+ CoA**，
+Interface 号为 **30300**，并已全量汉化（默认中文）。
 
-It keeps your own journey too: levels, firsts, the zones you
-passed through, close calls, lucky drops, the end of long quest chains and
-profession caps. All of it is written into a paper journal automatically.
+## 安装
 
-<!-- screenshot: journal spread -->
+把整个 `social_diary` 文件夹放进客户端的 `Interface/AddOns` 目录，然后重启
+客户端或 `/reload`：
 
-Made for **WoW Forever** (currently in beta): classic-era content on the
-retail addon API. Current version: 1.5.0.
+```
+<客户端目录>/Interface/AddOns/social_diary/
+```
 
-## Install
+本仓库自带的打包脚本会按 `.pkgmeta` 的排除规则生成干净的发布目录（不含
+`tests/`、`Dev/` 与开发期脚手架），并可直接安装：
 
-Install the Addon like you do with any oter WoW Addon: Put it in your game's `Interface/AddOns` folder.
+```powershell
+python tools/coa_pack.py            # 只打包到 dist/social_diary
+python tools/coa_pack.py --install  # 打包后复制进客户端 Interface/AddOns
+python tools/coa_pack.py --info     # 只对照本插件与客户端已装插件的 Interface 号
+```
 
-Download a release rather than the repository itself.
+默认客户端路径是 `D:\Game\CoA-live-64`，可用 `--client` 指定。更多安装与排错
+见 [INSTALL.md](../INSTALL.md)。
 
-## Getting started
+## 上手
 
-Opening it the first time, an Onboarding Message will appear. After that, you can type `/sd` to open the journal.
+第一次进入游戏会弹出引导卡片；之后输入 `/sd` 打开手账。建议在设置里给手账和
+“记住这个人”各绑一个快捷键。
 
-Ideally, bind a key in the Settings to open the journal quickly.
+### 手账是怎么记的
 
-### How the Diary works
+只是擦肩而过的人会被**铅笔轻轻记下**，30 天没再出现就擦掉（期限可在设置里改）；
+你亲手加进来的人会被**墨迹写上**，永久保留。
 
-People you only cross paths with are _pencilled in_ by themselves. If they
-never turn out to matter, they are rubbed out after 30 days (you can change
-this in _Settings_). Anyone you add is _inked in_ and stays for good.
+设置里的“界面 → 键位与快捷键”提供手账与“记住这个人”的按键，以及可以拖到动作
+条上的宏。
 
-_Settings_ → _Interface_ → _Keybinds & Shortcuts_ has keys for the journal and
-for _Remember this_, and macros you can drag onto an action bar.
+## 语言
 
-## Questie (optional)
+- 客户端是 3.3.5a 时默认中文（`zhCN`），也可在设置里切换到其他语言；保留了上游的
+  德语、西班牙语、法语、意大利语、波兰语、俄语，以及 4.2.0 新增的巴西葡萄牙语。
+- 界面字符串 100% 走 `L[...]`，中文词条 1872/1872 全覆盖；界面里不再有遗漏的
+  英文标题（示例人名 Thex 有意保留原文）。
+- **地名、副本名、职业名是“显示期翻译”**：手账里显示中文（含 32 个 CoA 职业
+  的中文名），存档、比较、索引仍用客户端英文原名与职业 token，因此换语言或换
+  客户端不会串数据；英文客户端下这些名字仍是英文。
+- CoA 自创内容（部分职业、自创副本与区域、42 个种族）没有官方中文来源，按“查
+  不到就留英文、不臆造”的原则处理；完整清单与理由见移植工作区的
+  docs/i18n-gaps.md（不在插件包内，避免把开发文档打进发布包）。
 
-Social Diary works on its own. If [Questie](https://github.com/Questie) and
-QuestieDB are installed, the diary reads their data as well:
+## CoA 适配：哪些能用，哪些降级
 
-- creatures are written down by their real names;
-- quest drops are measured against their real drop rates, so a lucky or
-  unlucky one gets its own card;
-- _Settings_ gains an _Integrations_ page that shows whether Questie was found.
+3.3.5a 的客户端 API 比现代零售客户端少很多能力，插件对这些缺口做了三档处理
+（真实现 / 空实现 / 关功能）。重要的可见差异如下：
 
-## Privacy
+| 能力 | CoA 客户端上的表现 |
+| --- | --- |
+| 社交标签页 | 在原生好友窗口 `FriendsFrame` 末尾注入按钮，点击打开手账（3.3.5 没有 `SocialUIFrame`） |
+| 设置页 | 挂到 `InterfaceOptionsFrame`（3.3.5 没有新版 `Settings` API） |
+| 字体 | 走客户端自带中文字体（ARHei / ARKai 等）；非中文客户端保持原字体 |
+| 地图 | 只显示区域名卡片：无世界坐标、无地图美术图层，因而**没有图钉、热区与底图** |
+| 路线记录（“你的日记”） | 无世界坐标（`UnitPosition` / `C_Map.GetWorldPosFromMapPos` 都是零售 API），**停留点、两地之间的路线、飞行段无法记录**；升级点、副本行程、战斗标记仍按区域图比例记录。设置里那句说明会直接告诉你这一点，`/sd journey` 统计能看到每次跳过的原因 |
+| 图集图标 | 无 `GetAtlasInfo`，图标降级为贴图路径或纯色；副本地图的羽化遮罩关闭 |
+| 伤害统计 | 无 `C_DamageMeter`，“千钧一发”捕获不开启（不报错、不出空卡片） |
+| 单位右键菜单 | 无 `Menu.ModifyMenu`，“记住这个人”不出现在右键菜单，改走快捷键/宏 |
+| 副本识别 | `GetInstanceInfo` 只返回 7 个值（无 instanceID），按地图/区域名匹配 CoA 自建副本表（103 条） |
+| 战场/竞技场 | 用 `UPDATE_BATTLEFIELD_STATUS` + `GetBattlefieldWinner` 收尾（`PVP_MATCH_*` 是 Forever 专有事件） |
 
-All data stays on your computer.
+完整的“客户端有什么/没什么”、逐项测试分类与验证方式见移植工作区根目录的
+VERIFY.md、PORT.md 与 DELIVERY.md（不在插件包内，避免把开发文档打进发布包）。
 
-## Contributing
+## Questie（可选）
 
-Bug reports and ideas are welcome in
-[Issues](https://github.com/social-diary/social_diary/issues). Questions go to
-[Discussions](https://github.com/social-diary/social_diary/discussions). If you
-would like to change the code, start with [CONTRIBUTING.md](CONTRIBUTING.md).
+插件本身独立可用。装了 [Questie](https://github.com/Questie) 与 QuestieDB 时，
+手账会额外读取它们的数据：生物按真名记录、任务掉落按真实掉率比较（幸运/倒霉
+各自成卡），设置里会多出一页“集成”显示是否找到 Questie。
 
-## Credits
+## 隐私
 
-- **Neuton Italic** font: Copyright 2010 The Neuton Project Authors, licensed
-  under the SIL Open Font License 1.1. It ships unmodified in `Fonts/`, with
-  the licence in `Fonts/OFL.txt`.
-- **Goodmountain** font by Hermann S Designs
-  ([github.com/Hermann-S-Designs/Goodmountain](https://github.com/Hermann-S-Designs/Goodmountain)):
-  all rights retained by Hermann S Designs, shared under their end-user
-  licence. It ships unmodified and unrenamed in `Fonts/`, with the licence in
-  `Fonts/Goodmountain-LICENSE.txt`.
-- **Questie and QuestieDB** ([github.com/Questie](https://github.com/Questie)):
-  the optional integration reads their data while the game runs.
+所有数据都保存在你自己的电脑上（`WTF/Account/<账号>/SavedVariables`）。
+
+## 参与
+
+问题与点子请走上游
+[Issues](https://github.com/social-diary/social_diary/issues) 或
+[Discussions](https://github.com/social-diary/social_diary/discussions)；本移植
+版的具体改动见 [docs/](docs/) 与 [CHANGELOG.md](CHANGELOG.md)。
+
+## 致谢
+
+- **Neuton Italic** 字体：Copyright 2010 The Neuton Project Authors，SIL Open
+  Font License 1.1，原样随 `Fonts/` 分发（许可证见 `Fonts/OFL.txt`）。
+- **Goodmountain** 字体 by Hermann S Designs
+  ([github.com/Hermann-S-Designs/Goodmountain](https://github.com/Hermann-S-Designs/Goodmountain))：
+  著作权归 Hermann S Designs，按其最终用户许可分发，原样、未改名随 `Fonts/`
+  分发（许可证见 `Fonts/Goodmountain-LICENSE.txt`）。
+- **Questie 与 QuestieDB** ([github.com/Questie](https://github.com/Questie))：
+  可选的集成在游戏运行时读取其数据。
 - **Dungeon Crawler Forever** by Per
-  ([github.com/perweum/dungeon-crawler-forever](https://github.com/perweum/dungeon-crawler-forever),
-  GPL-3.0-or-later): the dungeon maps, floors, bosses and where they stand,
-  wings and routes in `Vendor/DungeonCrawlerForever/` come from it, copied
-  with one changed line per file. Its drawn maps credit their artists (the
-  WoW Forever dungeons: Santiago Reyes, Atlas de Azeroth: Forever).
-- **Map overlay layout** in `UI/Map/OverlayData.lua` is generated by
-  `Dev/map_overlays.py` from the game client's DB2 tables, read via
-  [wago.tools](https://wago.tools).
-- Releases are packaged with the
-  [BigWigs packager](https://github.com/BigWigsMods/packager).
+  ([github.com/perweum/dungeon-crawler-forever](https://github.com/perweum/dungeon-crawler-forever))：
+  随 `Vendor/` 原样分发，只由 `Core/Dungeons.lua` 读取，移植不改其源码。
 
-World of Warcraft and Blizzard are trademarks of Blizzard Entertainment. Social
+## 许可
 
-Diary is an unofficial fan project, not affiliated with or endorsed by
-Blizzard.
-
-## Licence
-
-Social Diary is released under the
-[GNU General Public License v3.0 or later](LICENSE), since it includes code
-and data from Dungeon Crawler Forever. Releases up to 1.7.0 were under the
-MIT License and stay so. The Neuton font is under the
-[SIL Open Font License 1.1](Fonts/OFL.txt). The Goodmountain font is not
-covered by the GPL: it stays under its
-[own licence](Fonts/Goodmountain-LICENSE.txt), which allows sharing it
-unmodified with that licence but not changing, renaming or selling it.
+见 [LICENSE](LICENSE) 与 `Vendor/` 内各组件的许可证。

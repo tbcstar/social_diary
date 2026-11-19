@@ -1,115 +1,165 @@
--- A side tab on the Social window (O) that opens the journal.
+-- A tab on the Friends window (O) that opens the journal.
 --
--- The window's own tabs are unnamed 55x55 buttons stacked down its right
--- edge, 3 apart, built from the client's common-sidetab atlases. Ours copies
--- their art and hangs below the last one that is shown. It is a plain child
--- button: it never joins Blizzard's tab system (taint), so it is never
--- "selected". Clicking it closes the Social window and opens the journal.
+-- The client is 3.3.5a: its Social window is FriendsFrame, whose tabs are
+-- FriendsFrameTab1..5, made by FrameXML (PanelTemplates_SetNumTabs(FriendsFrame,
+-- 5); the WHO tab is disabled; the rest are Friends, Guild, Chat, Raid). We add
+-- one more button after the last tab the client has, built from the same
+-- template so it looks native.
+--
+-- Ours stays outside the window's tab system: we never call
+-- PanelTemplates_SetNumTabs and never write FriendsFrame.selectedTab (which
+-- FriendsFrame_Update switches on, with no branch past 5), so a click cannot
+-- leave Blizzard's window parked on a tab index it does not know. The click
+-- closes the window and opens the book, which is what the side tab on retail's
+-- Social frame did.
+--
+-- The build runs inside one pcall and under ENABLED: if the client surprises us
+-- (another tab count, no tab template) no tab is registered at all and the
+-- journal stays reachable from the minimap button.
 
 local addonName, ns = ...
 
 local L = ns.L
 
-local GAP = 3
+-- The off switch: false and no tab is ever created.
+local ENABLED = true
 
--- The minimap button's logo, its art registered in UI/Blizzard/Minimap.lua. It
--- fills its file edge to edge and is a solid, pale disc, so it is drawn smaller
--- than the window's gold glyphs to weigh the same.
-local ICON_SIZE = 28
+-- The tab this file built, for the checks below. Local: no other layer calls
+-- it, so it is not one of ns.UI's entry points (tests/ui_layout.lua).
+local FriendsTab = {}
 
-local tab
+-- FrameXML spaces the window's own tabs 15 to the left of each other.
+local GAP = -15
 
-local function HasAtlas(name)
-    return C_Texture and C_Texture.GetAtlasInfo and C_Texture.GetAtlasInfo(name) ~= nil
-end
+-- The icon the minimap button wears (UI/Blizzard/Minimap.lua registered it).
+local LOGO = "minimapLogo"
+local LOGO_SIZE = 20
 
-local function SetAtlasOr(texture, atlas, color)
-    if HasAtlas(atlas) then
-        texture:SetAtlas(atlas)
+local function PlayTabSound()
+    if SOUNDKIT and SOUNDKIT.IG_CHARACTER_INFO_TAB then
+        pcall(PlaySound, SOUNDKIT.IG_CHARACTER_INFO_TAB)
     else
-        texture:SetColorTexture(unpack(color))
+        pcall(PlaySound, "igCharacterInfoTab")
     end
 end
 
--- Blizzard's tabs, told apart from the window's other buttons by their parts.
-local function NativeTabs(window)
-    local tabs = {}
-    for _, child in ipairs({ window:GetChildren() }) do
-        if child ~= tab and child.Icon and child.SelectedTexture and child.HighlightTexture then
-            tabs[#tabs + 1] = child
-        end
-    end
-    return tabs
-end
-
-local function Place(window)
+-- The last of the window's own tabs this client has: the highest index that
+-- exists, whether or not it is shown (WHO is hidden here, Raid is not).
+local function LastNativeTab()
     local last
-    for _, native in ipairs(NativeTabs(window)) do
-        if native:IsShown() and (not last or native:GetBottom() < last:GetBottom()) then
-            last = native
-        end
+    for i = 1, 12 do
+        local native = _G["FriendsFrameTab" .. i]
+        if native then last = native end
     end
+    return last
+end
+
+local function OpenJournal()
+    if HideUIPanel then
+        pcall(HideUIPanel, FriendsFrame)
+    else
+        FriendsFrame:Hide()
+    end
+    ns.UI.OpenJournal()
+end
+
+-- A button from the window's tab template, or a plain one when this client
+-- has no such template (the tooltip and the click are ours either way).
+local function MakeTab()
+    local ok, tab = pcall(CreateFrame, "Button", FriendsTab.name, FriendsFrame, "FriendsFrameTabTemplate")
+    if ok and tab then return tab, tab.SetText ~= nil end
+    tab = CreateFrame("Button", FriendsTab.name, FriendsFrame)
+    return tab, false
+end
+
+local function Build()
+    local last = LastNativeTab()
+
+    local tab, templated = MakeTab()
+
+    -- As wide as the words need: the window's tabs are sized by
+    -- PanelTemplates for English labels, and "Social Diary" is longer.
+    local needed = 74
+    if templated then
+        tab:SetText(L["Social Diary"])
+        local fs = tab.GetFontString and tab:GetFontString()
+        if fs then
+            local w = fs:GetStringWidth()
+            if w and w > 0 then needed = w + LOGO_SIZE + 16 end
+        end
+    else
+        tab:SetSize(74, 22)
+        local text = tab:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
+        text:SetPoint("CENTER")
+        text:SetText(L["Social Diary"])
+        tab.text = text
+        local w = text:GetStringWidth()
+        if w and w > 0 then needed = w + 16 end
+    end
+
+    -- The logo the minimap button wears, small, before the text: the tab
+    -- reads as ours and not as one more Blizzard tab.
+    tab.logo = tab:CreateTexture(nil, "ARTWORK")
+    tab.logo:SetSize(LOGO_SIZE, LOGO_SIZE)
+    tab.logo:SetTexture(ns.Style.Art(LOGO))
+
     tab:ClearAllPoints()
     if last then
-        tab:SetPoint("TOPLEFT", last, "BOTTOMLEFT", 0, -GAP)
+        tab:SetPoint("LEFT", last, "RIGHT", GAP, 0)
     else
-        tab:SetPoint("TOPLEFT", window, "TOPRIGHT", 0, -122)
+        -- No tab found: sit where FrameXML puts the first one.
+        tab:SetPoint("BOTTOMLEFT", FriendsFrame, "BOTTOMLEFT", 11, 46)
     end
-end
+    -- Never narrower than the native tabs, never narrower than the words.
+    local native = last and last:GetWidth() or 0
+    if native > needed then needed = native end
+    tab:SetWidth(needed)
 
-local function Build(window)
-    tab = CreateFrame("Button", nil, window)
-    tab:SetSize(55, 55)
-
-    local bg = tab:CreateTexture(nil, "BACKGROUND")
-    bg:SetSize(55, 60)
-    bg:SetPoint("CENTER")
-    SetAtlasOr(bg, "common-sidetab", { 0.12, 0.09, 0.06, 1 })
-    if HasAtlas("common-sidetab-mask") then
-        local mask = tab:CreateMaskTexture()
-        mask:SetAllPoints(bg)
-        mask:SetAtlas("common-sidetab-mask")
-        bg:AddMaskTexture(mask)
+    -- The logo goes in the tab's left end, the text keeps the middle; both
+    -- are laid out again whenever the client re-sizes the tabs.
+    local function PlaceLogo()
+        if tab.text then
+            tab.logo:SetPoint("LEFT", tab, "LEFT", 8, 0)
+        else
+            tab.logo:SetPoint("LEFT", tab, "LEFT", 6, 0)
+            local text = tab:GetFontString()
+            if text then text:SetPoint("LEFT", tab.logo, "RIGHT", 4, 0) end
+        end
     end
+    PlaceLogo()
 
-    tab.icon = tab:CreateTexture(nil, "ARTWORK")
-    tab.icon:SetPoint("CENTER", -4, 0)
-    tab.icon:SetSize(ICON_SIZE, ICON_SIZE)
-    tab.icon:SetTexture(ns.Style.Art("minimapLogo"))
-    -- Like the window's inactive tabs: muted until pointed at.
-    tab.icon:SetAlpha(0.75)
+    ns.Style.Tooltip(tab, { { L["Social Diary"] }, { L["Open your journal."], 1, 1, 1 } }, "ANCHOR_RIGHT",
+        function(self, over)
+            if self.logo then self.logo:SetAlpha(over and 1 or 0.75) end
+        end)
+    tab.logo:SetAlpha(0.75)
 
-    local hover = tab:CreateTexture(nil, "HIGHLIGHT")
-    hover:SetSize(55, 60)
-    hover:SetPoint("CENTER")
-    if HasAtlas("common-sidetab-hover") then hover:SetAtlas("common-sidetab-hover") end
-
-    ns.Style.Tooltip(tab, { { "Social Diary" }, { L["Open your journal."], 1, 1, 1 } }, "ANCHOR_RIGHT",
-        function(self, over) self.icon:SetAlpha(over and 1 or 0.75) end)
+    -- Replaces the template's OnClick, which would have told PanelTemplates
+    -- this button is a tab of the window (and set a selectedTab of nil).
     tab:SetScript("OnClick", function()
-        if SOUNDKIT and SOUNDKIT.IG_CHARACTER_INFO_TAB then PlaySound(SOUNDKIT.IG_CHARACTER_INFO_TAB) end
-        HideUIPanel(window)
-        ns.UI.OpenJournal()
+        PlayTabSound()
+        OpenJournal()
     end)
 
-    -- Tabs come and go (Recruit a Friend, for one), so follow the last one.
-    local function Replace() Place(window) end
-    window:HookScript("OnShow", Replace)
-    for _, native in ipairs(NativeTabs(window)) do
-        native:HookScript("OnShow", Replace)
-        native:HookScript("OnHide", Replace)
+    FriendsTab.frame = tab
+    return tab
+end
+
+local function Try()
+    if not ENABLED or FriendsTab.frame then return end
+    if not FriendsFrame then return end
+
+    local ok, err = pcall(Build)
+    if not ok then
+        FriendsTab.error = tostring(err)
+        FriendsTab.frame = nil
     end
-    Place(window)
 end
 
-local function TryBuild()
-    if tab or not SocialUIFrame then return end
-    Build(SocialUIFrame)
-end
+ns.On("PLAYER_LOGIN", Try)
 
-ns.On("PLAYER_LOGIN", TryBuild)
-
--- In case the window is load-on-demand.
+-- The window ships in Blizzard_FriendsFrame on some builds; build as soon as
+-- the frame exists either way.
 ns.On("ADDON_LOADED", function()
-    if not tab then TryBuild() end
+    if not FriendsTab.frame then Try() end
 end)

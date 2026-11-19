@@ -168,9 +168,12 @@ end
 -- `info` is { instanceID, name, instanceType, difficultyID, difficulty }.
 function Instances.Enter(info, now)
     now = now or ns.Now()
+    -- 3.3.5's GetInstanceInfo has no instance id: the capture falls back to the
+    -- zone's map id, and a run recorded without one still matches by name.
+    local instanceID = info.instanceID or info.mapID or info.name
     local visit = Instances.Current()
     local span = visit and Span(visit)
-    if visit and visit.instanceID == info.instanceID then
+    if visit and visit.instanceID == instanceID then
         if span and not span.to then return visit end
         if span and now - span.to <= GAP then
             if #visit.spans < MAX_SPANS then
@@ -185,11 +188,11 @@ function Instances.Enter(info, now)
     if visit then Instances.Close(now) end
 
     visit = Instances.New({
-        instanceID = info.instanceID, name = info.name, instanceType = info.instanceType,
+        instanceID = instanceID, name = info.name, instanceType = info.instanceType,
         difficultyID = info.difficultyID, difficulty = info.difficulty,
         startedAt = now, members = {}, bossesKilled = {}, deaths = 0, wipes = 0,
         spans = { { from = now } }, pulls = {}, deathLog = {}, loot = {}, sessionIds = {},
-        bossTotal = ns.Dungeons and ns.Dungeons.BossTotal(info.instanceID, info.difficultyID) or nil,
+        bossTotal = ns.Dungeons and ns.Dungeons.BossTotal(instanceID, info.difficultyID) or nil,
     })
     ns.db.meta.openVisit = visit.id
     local session = ns.Sessions.Current and ns.Sessions.Current()

@@ -121,6 +121,14 @@ local NEUTON_ITALIC = "Interface\\AddOns\\" .. addonName .. "\\Fonts\\Neuton-Ita
 -- title. The user's client loads it (20 Oct: SetFont on it returns true).
 local GOODMOUNTAIN = "Interface\\AddOns\\" .. addonName .. "\\Fonts\\Goodmountain.otf"
 
+-- The CoA client (3.3.5a, its locale enUS, 19 Nov 2026): Fonts/FRIZQT__.TTF,
+-- Fonts/ARHei.ttf and Fonts/ARKai_T.ttf are one file, Microsoft YaHei (Han
+-- and Latin both), and Fonts/MORPHEUS.TTF is FZCuYuan (Han and Latin both).
+-- So every path here draws Chinese as it stands: no file is swapped for an
+-- alphabet, and the four faces keep their sizes. It reads TrueType only,
+-- though, so a face shipped as .otf may be refused: PlainFont checks each
+-- one as it sets it.
+
 -- All four are Latin only, and a name can be in any alphabet. Where the client
 -- has font families, each font here is one: its own file as the roman member,
 -- and for the other alphabets the client's own files, as its Fonts.xml pairs
@@ -195,9 +203,24 @@ local function Ink(font, color)
     font:SetShadowOffset(0, 0)
 end
 
+-- Set `file` on `font`, and say whether the client took it: a client that
+-- cannot load a file leaves the font object without a font at all, which is
+-- a name drawn nowhere, not an ugly one.
+local function Sets(font, file, size)
+    font:SetFont(file, size, "")
+    local ok, got = pcall(font.GetFont, font)
+    return ok and SamePath(got, file)
+end
+
 local function PlainFont(name, file, size, color)
     local font = CreateFont(name)
-    font:SetFont(file, size, "")
+    if not Sets(font, file, size) then
+        -- Goodmountain ships as .otf and its licence forbids renaming it, so
+        -- a client that will not read it gets the client's own Friz instead:
+        -- the face every client has, and the one that holds the letters of
+        -- the alphabet the diary is read in (see OTHER_ALPHABETS).
+        if not Sets(font, FRIZ, size) then Sets(font, "Fonts\\FRIZQT__.TTF", size) end
+    end
     Ink(font, color)
     return font
 end

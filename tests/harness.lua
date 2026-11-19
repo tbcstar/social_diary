@@ -17,6 +17,28 @@ local H = {}
 local here, root
 local mock
 
+-- The tree's own listing (tests/fs.lua), for the tests that read files: off
+-- lfs if the host has it, else the OS's lister, else the TOC's manifest.
+local tree
+local function Files()
+    tree = tree or dofile(here .. "/fs.lua")
+    return tree
+end
+
+-- The dev tooling the TOC no longer ships (tests/dev.lua).
+local devdata
+local function Dev()
+    devdata = devdata or dofile(here .. "/dev.lua")
+    return devdata
+end
+
+-- The file being run, and the pad's stand-in API (tests/pad_api.lua): the
+-- pad is retail-only, so only the files that test its UI get a gamepad.
+local currentFile
+local function Pad()
+    return dofile(here .. "/pad_api.lua")
+end
+
 local checks, section = 0, nil
 local verbose = false
 
@@ -76,14 +98,52 @@ end
 -- One file's context
 --------------------------------------------------------------------------
 
+-- A file may only see the gamepad stand-in when it is about the pad: 3.3.5
+-- has no gamepad API, so any other file should see Core/Compat/'s empty
+-- tables (and the mock's Reset takes the stand-in away again after it).
+local function WantsPad(file)
+    if not file then return false end
+    local text = Files().Read(here .. "/" .. file .. ".lua")
+    if not text then return false end
+    return text:find("mock.pad", 1, true) ~= nil
+        or text:find("C_GamePad", 1, true) ~= nil
+        or text:find("InputUtil", 1, true) ~= nil
+end
+
 local function Context()
-    local T = { mock = mock, Section = Section, Check = Check, Eq = Eq }
+    local T = { mock = mock, Section = Section, Check = Check, Eq = Eq, FS = Files() }
     T.F = dofile(here .. "/fixtures.lua")
     T.DAY = 24 * 60 * 60
 
     -- The addon as the client loads it, before any event.
     function T.Load()
-        T.ns = mock.LoadAddon(root)
+        local toc = Files().Toc(root)
+        T.ns = mock.LoadAddon(root, toc)
+        -- The suite drives /sd testdata and the probes. When the TOC still
+        -- ships the dev block they are already in, so they are loaded here
+        -- only when it does not (they must not register twice).
+        if not Files().Read(toc):find("Dev/Art.lua", 1, true) then Dev().Load(root, T.ns) end
+        -- Menus: Core/Compat/MenuUtil builds one through EasyMenu. The
+        -- suite only ever asks which entries a menu has, so the generator
+        -- runs against the mock's description tree instead of a dropdown
+        -- (M.MenuClick walks it). This lives here, not in the mock, so the
+        -- mock goes on honestly refusing to define a retail name.
+        local MenuUtil = rawget(_G, "MenuUtil")
+        if MenuUtil and MenuUtil.CreateContextMenu and not MenuUtil.IsRecorder then
+            MenuUtil.CreateContextMenu = function(owner, generator)
+                local menu = mock.DescribeMenu()
+                generator(owner, menu)
+                mock.contextMenu = menu
+                return menu
+            end
+            MenuUtil.IsRecorder = true
+        end
+        -- 3.3.5 has no gamepad API: Core/Compat/ installs InputUtil and
+        -- C_GamePad as empty tables and the pad can never turn on. Only a
+        -- file that is about the pad gets the stand-in (tests/pad_api.lua),
+        -- and only while it runs, so no other file can make the pad look
+        -- present.
+        if WantsPad(currentFile) then Pad().Install(mock) end
         return T.ns
     end
 
@@ -159,6 +219,7 @@ end
 -- The run
 --------------------------------------------------------------------------
 
+
 -- The guard: a file that runs away (an endless loop, a table that never
 -- stops growing) ends the run with its name, instead of filling the
 -- machine's memory and swap. Checked every GUARD_STEP VM instructions;
@@ -191,7 +252,6 @@ local function Guard()
     print("\nRUN STOPPED BY THE GUARD")
     os.exit(1)
 end
-
 local function Wanted(name, only)
     if #only == 0 then return true end
     for i = 1, #only do
@@ -216,9 +276,15 @@ function H.Run(dir, files, args)
         end
     end
 
+    -- FORCE_RETAIL=1 runs the suite against the retail-API mock the addon
+    -- came with (tests/wowmock_retail.lua), as a comparison: it is the
+    -- "before" of the port. The default is the 3.3.5 mock, which models
+    -- the CoA client and leaves the retail names to Core/Compat/.
+    local mockFile = os.getenv("FORCE_RETAIL") == "1" and "/wowmock_retail.lua" or "/wowmock.lua"
+
     if jit then jit.off(); jit.flush() end
 
-    mock = dofile(here .. "/wowmock.lua")
+    mock = dofile(here .. mockFile)
     CaptureChat()
     -- Reset puts every global back as the mock made it, the mock's English
     -- GetLocale among them; under --locale the client's language is part
@@ -234,6 +300,7 @@ function H.Run(dir, files, args)
     for _, name in ipairs(files) do
         if Wanted(name, only) then
             ran = ran + 1
+            currentFile = name
             mock.Reset()
             said, section = {}, nil
             local before = checks
@@ -264,6 +331,7 @@ function H.Run(dir, files, args)
                 end
                 print(err)
             end
+            Pad().Uninstall()
             -- The file's copy of the addon is garbage once the next Reset
             -- runs; collect now, so the next file starts from a small heap.
             mock.Reset()

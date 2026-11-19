@@ -470,7 +470,7 @@ local function LayerSize(mapID)
     if mapID == nil then return ART.w, ART.h, false end
     local hit = layers[mapID]
     if hit == nil then
-        local list = mapID and C_Map.GetMapArtLayers and C_Map.GetMapArtLayers(mapID)
+        local list = mapID and C_Map and C_Map.GetMapArtLayers and C_Map.GetMapArtLayers(mapID)
         local layer = list and list[1]
         local LW, LH = layer and ns.Plain(layer.layerWidth), layer and ns.Plain(layer.layerHeight)
         hit = type(LW) == "number" and LW > 0 and type(LH) == "number" and LH > 0 and { LW, LH } or false

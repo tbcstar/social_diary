@@ -9,6 +9,12 @@
 -- [finale questID] = { title, routes = { { first, ..., finale }, ... } }:
 -- the title in English, for when the client cannot name the quest; a
 -- second route where the other faction comes to the same end another way.
+--
+-- CoA, 19 Nov 2026: the chains in the classic range are stock 3.3.5 quest
+-- ids, and CoA keeps them. The nine entries at the end of the table (92708
+-- to 95349) came from Forever's own content and are unconfirmed on CoA: a
+-- quest that does not exist there simply never ends, so they are dead
+-- weight, not a fault.
 
 local addonName, ns = ...
 

@@ -40,16 +40,13 @@ local secretMeta = {
     __tostring = function() return "<SECRET value>" end,
 }
 
+-- 3.3.5 has no secret values: everything a handler is handed is readable. The
+-- retail mock wrapped such a value in a SECRET table so issecretvalue() said
+-- yes; there is nothing to wrap here, so M.secret hands its argument straight
+-- back and a test that used it reads the value like any other. issecretvalue
+-- and scrubsecretvalues are the Compat layer's to define (Env.lua); the mock
+-- must not, or a retail-shaped guard in the addon would look satisfied.
 function M.secret(value)
-    return setmetatable({ [SECRET] = value }, secretMeta)
-end
-
-_G.issecretvalue = function(value)
-    return getmetatable(value) == secretMeta
-end
-
-_G.scrubsecretvalues = function(value)
-    if getmetatable(value) == secretMeta then return nil end
     return value
 end
 
@@ -79,10 +76,18 @@ local function Unit(token)
 end
 
 -- A secret is itself a table here, so it has to be checked before the
--- multi-return unpack tries to index it.
+-- multi-return unpack tries to index it. 3.3.5 has no secret values, so the
+-- global may simply be absent until Core/Compat defines it: read it through
+-- rawget, and never define it here (a retail-shaped guard would otherwise
+-- look satisfied by its own mock).
+local function IsSecret(value)
+    local is = rawget(_G, "issecretvalue")
+    return is ~= nil and is(value) == true
+end
+
 local function Unpack(def, key)
     local value = def and def[key]
-    if issecretvalue(value) or type(value) ~= "table" then return value end
+    if IsSecret(value) or type(value) ~= "table" then return value end
     return value[1], value[2], value[3]
 end
 
@@ -557,7 +562,7 @@ _G.CreateFont = function(name)
 end
 
 _G.CreateColor = function(r, g, b, a) return { r = r, g = g, b = b, a = a } end
-_G.CreateVector3D = function(x, y, z) return { x = x, y = y, z = z } end
+-- (CreateVector3D/2D: Core/Compat/Extras.lua's, not the client's.)
 
 -- A creature display's 2D portrait onto a texture (the killer card's
 -- print): recorded as the texture's `portrait`.
@@ -626,13 +631,22 @@ _G.HideUIPanel = function(frame)
     frame:Hide()
 end
 
-_G.C_AddOns = {
-    GetAddOnMetadata = function(_, k) return k == "Version" and "1.0.0" or nil end,
-    LoadAddOn = function() end,
-}
+-- 3.3.5's own addon functions (C_AddOns is the retail namespace, and the
+-- client has no such table: Core/Compat/Env.lua builds it from these).
+M.addons = {}
+_G.LoadAddOn = function(name) M.addons[name] = true return true end
+_G.IsAddOnLoaded = function(name) return M.addons[name] == true, true end
+_G.GetAddOnMetadata = function(name, key)
+    if key == "Version" then return "4.1.1" end
+    if key == "Title" then return "Social Diary" end
+    return nil
+end
+_G.GetAddOnInfo = function(name) return name, name, "", true, "", "" end
+_G.GetNumAddOns = function() return 1 end
 
 _G.GetServerTime = function() return M.now end
-_G.GetBuildInfo = function() return "1.60.1", "69893", "Sep 17 2026", 16001 end
+-- 3.3.5a: the build the CoA client reports, and the locale it is installed in.
+_G.GetBuildInfo = function() return "3.3.5", "12340", "Aug 12 2009", 30300 end
 _G.GetLocale = function() return "enUS" end
 _G.GetRealmName = function() return M.realm end
 _G.GetNormalizedRealmName = function() return (M.realm:gsub("%s+", "")) end
@@ -643,6 +657,12 @@ _G.SlashCmdList = {}
 --------------------------------------------------------------------------
 
 M.zone, M.subZone = "Mulgore", ""
+-- The zone text SetMapToCurrentZone last worked the map out from. On the
+-- client the text and the area id change together (both from the player's
+-- position), so a change of text means a new area; an unchanged text means
+-- a test that moved M.mapID on its own is describing where the player
+-- stands now, and the id wins. Reset() clears it with everything else.
+M.lastZone = nil
 M.mapID = 1412
 M.position = { x = 0.4213, y = 0.6157 }
 M.inInstance, M.instanceName, M.instanceID = false, "The Deadmines", 36
@@ -689,67 +709,184 @@ M.mapRects = {
     [2000] = { 1000, 1000, 200, 150 },
 }
 
--- The player in the world, as UnitPosition hands it: { x, y, inst }, or nil
--- for no reading.
+-- The world map, as 3.3.5 has it. No C_Map: continents by index, zones
+-- within a continent, one of the two current. GetMapInfo takes NO
+-- arguments and hands back the current map's art (the client's own
+-- QuestLogFrame.lua:587 reads it as "local mapFileName, textureHeight =
+-- GetMapInfo()"), and GetPlayerMapPosition is the only way to ask where
+-- the player is on it. C_Map, its world vectors and UnitPosition are the
+-- retail face of this and belong to Core/Compat (PORT.md section 3).
+-- M.world stays as data only: 3.3.5 has no API that returns it.
 M.world = nil
 
-_G.C_Map = {
-    GetMapInfo = function(mapID)
-        if not M.mapNames[mapID] then return nil end
-        return { mapID = mapID, name = M.mapNames[mapID], mapType = M.mapTypes[mapID] or 3,
-            parentMapID = M.mapParents[mapID] }
-    end,
-    -- The world vector as the client hands it: (north, west), so its
-    -- first axis runs down the map, against y, and its second across it,
-    -- against x (HereBeDragons: `local top, left = topleft:GetXY()`).
-    GetWorldPosFromMapPos = function(mapID, pos)
-        local r = M.mapRects[mapID]
-        if not r then return nil end
-        return 1, CreateVector2D(-(r[2] + pos.y * r[4]), -(r[1] + pos.x * r[3]))
-    end,
-    GetMapPosFromWorldPos = function(_, world, mapID)
-        local r = M.mapRects[mapID]
-        if not r then return nil end
-        return mapID, CreateVector2D((-world.y - r[1]) / r[3], (-world.x - r[2]) / r[4])
-    end,
-    GetMapWorldSize = function(mapID)
-        local r = M.mapRects[mapID]
-        if not r then return 0, 0 end
-        return r[3], r[4]
-    end,
-    GetMapArtLayers = function(mapID)
-        if not M.mapArt[mapID] then return nil end
-        return { { layerWidth = 1002, layerHeight = 668, tileWidth = 256, tileHeight = 256 } }
-    end,
-    GetMapArtLayerTextures = function(mapID)
-        if not M.mapArt[mapID] then return nil end
-        local files = {}
-        for i = 1, 12 do files[i] = mapID * 100 + i end
-        return files
-    end,
-    GetBestMapForUnit = function() return M.mapID end,
-    GetPlayerMapPosition = function()
-        if not M.position then return nil end
-        -- A restricted map hands back the whole position secret (12.0.5).
-        if issecretvalue(M.position) then return M.position end
-        local p = M.position
-        return { GetXY = function() return p.x, p.y end }
-    end,
+M.continents = { "Kalimdor", "Eastern Kingdoms", "Outland", "Northrend" }
+-- Zone art per continent, in the client's order: the area id the client
+-- reports for it, the texture GetMapInfo hands back and its height.
+M.mapZones = {
+    [1] = {
+        { id = 1412, name = "Mulgore", file = "Interface\\WorldMap\\Kalimdor\\Mulgore\\Mulgore1", height = 668 },
+        { id = 1413, name = "The Barrens", file = "Interface\\WorldMap\\Kalimdor\\TheBarrens\\TheBarrens1", height = 668 },
+    },
+    [2] = {
+        { id = 1454, name = "Orgrimmar", file = "Interface\\WorldMap\\Azeroth\\Orgrimmar\\Orgrimmar1", height = 668 },
+    },
 }
+M.continentIDs = { [1] = 1414, [2] = 1415, [3] = 1416, [4] = 1417 }
+M.mapContinent, M.mapZone = 1, 1
 
-_G.C_MapExplorationInfo = {
-    GetExploredMapTextures = function(mapID) return M.explored[mapID] end,
-}
+_G.GetMapContinents = function() return unpack(M.continents) end
 
-_G.CreateVector2D = function(x, y)
-    return { x = x, y = y, GetXY = function(self) return self.x, self.y end }
+_G.GetMapZones = function(continent)
+    local zones = M.mapZones[continent]
+    if not zones then return end
+    local names = {}
+    for i, zone in ipairs(zones) do names[i] = zone.name end
+    return unpack(names)
 end
 
--- y first, as the client hands it.
-_G.UnitPosition = function()
-    local w = M.world
-    if not w then return nil end
-    return w.y, w.x, 0, w.inst or 1
+_G.SetMapZoom = function(continent, zone)
+    M.mapContinent, M.mapZone = continent, zone
+end
+_G.GetCurrentMapContinent = function() return M.mapContinent end
+_G.GetCurrentMapZone = function() return M.mapZone end
+
+-- The area id of whatever the map is showing: a zone's own, or the
+-- continent's when a whole continent is up.
+function M.CurrentAreaID()
+    local zones = M.mapZones[M.mapContinent]
+    local zone = zones and zones[M.mapZone]
+    if zone then return zone.id end
+    return M.continentIDs[M.mapContinent]
+end
+_G.GetCurrentMapAreaID = function() return M.CurrentAreaID() end
+
+-- The area id the client last announced. The client fires a zone event when
+-- the map the player stands on changes (a cave, a district, a whole zone),
+-- and Core/Compat/Map.lua drops its map cache on those events. Setting
+-- M.mapID by hand is not a move unless the test says so, which is what
+-- M.MoveTo is for: the client's own map callers never announce anything.
+M.reportedArea = nil
+function M.AnnounceArea()
+    local id = M.CurrentAreaID()
+    if id == M.reportedArea then return end
+    M.reportedArea = id
+    M.fire("ZONE_CHANGED_INDOORS")
+end
+
+-- The player moved: stand at `position` (0..1, or nil) on `mapID` and tell
+-- the client, as walking into a cave or another district does. The map view
+-- follows at once, so a caller reading the position straight afterwards sees
+-- the new area, exactly as it does in game.
+function M.MoveTo(mapID, position)
+    M.mapID, M.position = mapID, position
+    SetMapToCurrentZone()
+    M.AnnounceArea()
+end
+
+-- Select a map by area id: the zone it belongs to, or the continent. An id
+-- the zone list does not hold but M.mapNames names (a test's own map, 9001
+-- and the like) is added to the list the way the client's own zone table
+-- would describe it, so a name can be read back for it.
+_G.SetMapByID = function(areaID)
+    local function choose()
+    if not areaID then return end
+    for continent, zones in pairs(M.mapZones) do
+        for index, zone in ipairs(zones) do
+            if zone.id == areaID then
+                M.mapContinent, M.mapZone = continent, index
+                return
+            end
+        end
+    end
+    for continent, id in pairs(M.continentIDs) do
+        if id == areaID then M.mapContinent, M.mapZone = continent, 0 return end
+    end
+    local name = M.mapNames[areaID]
+    if name then
+        local zones = M.mapZones[1]
+        zones[#zones + 1] = { id = areaID, name = name, file = nil, height = 0 }
+        M.mapContinent, M.mapZone = 1, #zones
+    end
+    end
+    choose()
+end
+
+-- The client works out the map from where the player stands: moving to a
+-- new zone changes GetZoneText and the area id together. A test that moves
+-- only M.zone is describing a move, so the text looks the id up; a test
+-- that moves only M.mapID is describing where the player stands without
+-- restating the text, and the id is used as it stands. M.lastZone is what
+-- tells the two apart.
+_G.SetMapToCurrentZone = function()
+    local function choose()
+    local here = M.zone
+    if M.lastZone ~= here then
+        M.lastZone = here
+        for continent, zones in pairs(M.mapZones) do
+            for index, zone in ipairs(zones) do
+                if here ~= nil and zone.name == here then
+                    M.mapID = zone.id
+                    M.mapContinent, M.mapZone = continent, index
+                    return
+                end
+            end
+        end
+    end
+    if M.mapID ~= nil then
+        for continent, zones in pairs(M.mapZones) do
+            for index, zone in ipairs(zones) do
+                if zone.id == M.mapID then
+                    M.mapContinent, M.mapZone = continent, index
+                    return
+                end
+            end
+        end
+        for continent, id in pairs(M.continentIDs) do
+            if id == M.mapID then M.mapContinent, M.mapZone = continent, 0 return end
+        end
+        -- A sub-map (a cave, a building) has its own area id in the client's
+        -- map table: the client selects it and reports that id back.
+        if M.mapNames[M.mapID] then SetMapByID(M.mapID) return end
+    end
+    -- An id the client cannot describe: no map is up at all.
+    M.mapContinent, M.mapZone = 0, 0
+    end
+    choose()
+end
+
+_G.GetMapInfo = function()
+    local zones = M.mapZones[M.mapContinent]
+    local zone = zones and zones[M.mapZone]
+    if not zone then return nil end
+    return zone.file, zone.height
+end
+
+-- Where the player is on the map currently up, 0..1 (y down); 0, 0 for a
+-- map the player is not on, as the client answers.
+_G.GetPlayerMapPosition = function(unit)
+    if not M.position or M.mapID == nil or M.CurrentAreaID() ~= M.mapID then return 0, 0 end
+    return M.position.x, M.position.y
+end
+
+-- The C_Map the client itself ships: FrameXML\\Util\\C_WorldMap.lua:188 has
+-- "C_Map = C_Map or {}", filled with GetBestMapForUnit built on the globals
+-- above and with nothing else. Every other member is Core/Compat/Map.lua's.
+_G.C_Map = {
+    GetBestMapForUnit = function(unit)
+        SetMapToCurrentZone()
+        return GetCurrentMapAreaID()
+    end,
+}
+
+-- Explored map overlays, as 3.3.5 has them: (texture, numTiles, explored)
+-- per index. C_MapExplorationInfo is the retail face of this and belongs
+-- to Core/Compat.
+M.explored = {}
+_G.GetNumMapOverlays = function() return #M.explored end
+_G.GetMapOverlayInfo = function(index)
+    local overlay = M.explored[index]
+    if not overlay then return nil end
+    return overlay.texture, overlay.tiles or 1, overlay.explored ~= false
 end
 
 M.onTaxi, M.afk, M.dead, M.ghost, M.resting = false, false, false, false, false
@@ -766,12 +903,6 @@ _G.UnitIsFeignDeath = function(unit)
     local def = M.units[unit]
     return def and def.feigning or false
 end
-_G.UnitTokenFromGUID = function(guid)
-    for token, def in pairs(M.units) do
-        if def.guid == guid then return token end
-    end
-    return nil
-end
 _G.IsResting = function() return M.resting end
 _G.GetMaxPlayerLevel = function() return M.maxLevel end
 
@@ -781,22 +912,38 @@ M.health, M.healthMax = 100, 100
 _G.UnitHealth = function() return M.health end
 _G.UnitHealthMax = function() return M.healthMax end
 
--- JRN-26: the quest log, as the current API reads it. M.quests is a list
--- of { questID, title, objectives = { { text, type, numFulfilled,
--- numRequired, finished } } }.
+-- JRN-26: the quest log, as 3.3.5 has it (the retail C_QuestLog table is
+-- Core/Compat/Quests.lua's job, not the mock's). M.quests is a list of
+-- { questID, title, objectives = { { text, type, numFulfilled,
+-- numRequired, finished } } }. The orders below are the client's own:
+-- GetQuestLogTitle returns title, level, suggestedGroup, isHeader,
+-- isCollapsed, isComplete, isDaily, questID (8 values), and
+-- GetQuestLogLeaderBoard returns text, type, finished, have, need.
 M.quests = {}
-_G.C_QuestLog = {
-    GetNumQuestLogEntries = function() return #M.quests, #M.quests end,
-    GetInfo = function(i)
-        local q = M.quests[i]
-        return q and { questID = q.questID, title = q.title, isHeader = false }
-    end,
-    GetQuestObjectives = function(questID)
-        for _, q in ipairs(M.quests) do
-            if q.questID == questID then return q.objectives end
-        end
-    end,
-}
+_G.GetNumQuestLogEntries = function() return #M.quests end
+_G.GetQuestLogTitle = function(i)
+    local q = M.quests[i]
+    if not q then return end
+    return q.title, q.level, q.suggestedGroup, false, false, q.complete, nil, q.questID
+end
+_G.GetQuestLink = function(i)
+    local q = M.quests[i]
+    return q and q.link
+end
+_G.GetNumQuestLeaderBoards = function(i)
+    local q = M.quests[i]
+    return q and #(q.objectives or {}) or 0
+end
+_G.GetQuestLogLeaderBoard = function(j, i)
+    local q = M.quests[i]
+    local o = q and q.objectives and q.objectives[j]
+    if not o then return end
+    return o.text, o.type, o.finished, o.numFulfilled, o.numRequired
+end
+_G.GetQuestLogQuestText = function(i)
+    local q = M.quests[i]
+    return q and q.detail, q and q.objectivesText
+end
 
 -- The loot window: M.loot is a list of { link, sources = { guid, n, ... } }.
 M.loot = {}
@@ -853,21 +1000,35 @@ M.bags = { [0] = { size = 16 } }
 M.equipped = {}
 M.itemInfo = {}
 
-_G.C_Container = {
-    GetContainerNumSlots = function(bag)
-        local b = M.bags[bag]
-        if b then return b.size end
-        local worn = M.equipped[19 + bag]
-        return worn and worn.size or 0
-    end,
-    GetContainerItemInfo = function(bag, slot)
-        local b = M.bags[bag]
-        local item = b and b[slot]
-        if not item then return nil end
-        return { hyperlink = item.link, quality = item.quality, itemID = tonumber(item.link:match("item:(%d+)")) }
-    end,
-    ContainerIDToInventoryID = function(bag) return 19 + bag end,
-}
+-- The container natives, 8 values flat as the client returns them:
+-- texture, count, locked, quality, readable, lootable, hyperlink,
+-- isFiltered.
+_G.GetContainerNumSlots = function(bag)
+    local b = M.bags[bag]
+    if b then return b.size end
+    local worn = M.equipped[19 + bag]
+    return worn and worn.size or 0
+end
+_G.GetContainerItemInfo = function(bag, slot)
+    local b = M.bags[bag]
+    local item = b and b[slot]
+    if not item then return end
+    local id = item.link and tonumber(item.link:match("item:(%d+)"))
+    local texture = id and select(10, GetItemInfo(id)) or item.texture or 134400
+    return texture, item.count or 1, item.locked or false, item.quality, false, false, item.link, false
+end
+_G.GetContainerItemLink = function(bag, slot)
+    local b = M.bags[bag]
+    local item = b and b[slot]
+    return item and item.link
+end
+_G.GetContainerNumFreeSlots = function(bag)
+    local size = GetContainerNumSlots(bag)
+    local used = 0
+    for slot = 1, size do if GetContainerItemInfo(bag, slot) then used = used + 1 end end
+    return size - used, 0
+end
+_G.ContainerIDToInventoryID = function(bag) return 19 + bag end
 
 _G.GetInventoryItemLink = function(_, slot)
     local item = M.equipped[slot]
@@ -879,23 +1040,27 @@ _G.GetInventoryItemQuality = function(_, slot)
     return item and item.quality
 end
 
--- M.itemInfo[itemID].icon is its icon (134400, the question mark, else);
--- .quality what GetItemQualityByID says (nil, not cached, else).
-_G.C_Item = {
-    GetItemInfoInstant = function(id)
-        local info = M.itemInfo[tonumber(id)]
-        if not info then return id, "Miscellaneous", "Junk", "", 134400, 15, 0 end
-        return id, nil, nil, info.equipLoc or "", info.icon or 134400, info.classID or 15, info.subclassID or 0
-    end,
-    GetItemIconByID = function(id)
-        local info = M.itemInfo[tonumber(id)]
-        return info and info.icon or 134400
-    end,
-    GetItemQualityByID = function(id)
-        local info = M.itemInfo[tonumber(id)]
-        return info and info.quality
-    end,
-}
+-- M.itemInfo[itemID] = { equipLoc, classID, subclassID, icon, quality,
+-- name, type, subType, itemLevel, sellPrice }, what the item natives read.
+-- GetItemInfoInstant is the client's 7-value form; GetItemInfo the
+-- 11-value one (the tenth is the texture, which is what the container
+-- native above reuses).
+_G.GetItemInfoInstant = function(id)
+    id = tonumber(id)
+    local info = id and M.itemInfo[id]
+    if not info then return id, "Miscellaneous", "Junk", "", 134400, 15, 0 end
+    return id, info.type or "Miscellaneous", info.subType or "Junk",
+        info.equipLoc or "", info.icon or 134400, info.classID or 15, info.subclassID or 0
+end
+_G.GetItemInfo = function(id)
+    id = tonumber(id)
+    local info = id and M.itemInfo[id]
+    if not info then return end
+    local link = info.link or ("|cff9d9d9d|Hitem:" .. id .. ":0:0:0:0:0:0:0|h[" .. (info.name or "Item") .. "]|h|r")
+    return info.name or "Item", link, info.quality or 0, info.itemLevel or 1,
+        info.minLevel or 1, info.type or "Miscellaneous", info.subType or "Junk",
+        info.stackCount or 1, info.equipLoc or "", info.icon or 134400, info.sellPrice or 0
+end
 
 --------------------------------------------------------------------------
 -- Professions (Your Diary's skill caps): the modern API, as on Forever.
@@ -974,10 +1139,8 @@ _G.IsInGroup = function() return M.groupSize > 0 end
 _G.GetNumGroupMembers = function() return M.groupSize end
 
 -- DIA-2a's unknown: whether this resolves in a build with no realm names.
+-- (C_PlayerInfo is Core/Compat/'s: the client has no such namespace.)
 M.locationGUID = nil
-_G.C_PlayerInfo = {
-    GetGUIDFromPlayerLocation = function() return M.locationGUID end,
-}
 
 M.popups = {}
 _G.StaticPopupDialogs = {}
@@ -1034,15 +1197,14 @@ local function Description(text, kind, a, b)
     return d
 end
 
+-- MenuUtil is Core/Compat/Extras.lua's (retail's name is not the client's).
+-- The recorder below is what the harness installs in its place: the same
+-- generator runs against a description tree, so a test can walk it by
+-- label (M.MenuClick).
 M.contextMenu = nil
-_G.MenuUtil = {
-    CreateContextMenu = function(owner, generator)
-        local root = Description(nil, "root")
-        generator(owner, root)
-        M.contextMenu = root
-        return root
-    end,
-}
+function M.DescribeMenu()
+    return Description(nil, "root")
+end
 
 -- M.MenuClick("Tag", "friend") picks the radio under the submenu. Returns
 -- false when the path does not exist.
@@ -1084,24 +1246,19 @@ _G.wipe = function(t)
     return t
 end
 
--- The canvas half of the Settings API, which is all the addon uses.
+-- 3.3.5's own Interface Options registry, which Core/Compat/Settings.lua
+-- backs retail's Settings table with (the Settings table itself is the
+-- compat layer's, not the mock's). M.settingsCategories lists what was
+-- added, in order, as { frame, name }; M.openedCategory the name the
+-- options frame was last asked to show.
 M.settingsCategories, M.openedCategory = {}, nil
-_G.Settings = {
-    RegisterCanvasLayoutCategory = function(frame, name)
-        local category = { frame = frame, name = name, ID = #M.settingsCategories + 100 }
-        function category:GetID() return self.ID end
-        return category
-    end,
-    RegisterAddOnCategory = function(category)
-        M.settingsCategories[#M.settingsCategories + 1] = category
-    end,
-    OpenToCategory = function(id)
-        M.openedCategory = id
-        for _, category in ipairs(M.settingsCategories) do
-            if category.ID == id then category.frame:Show() end
-        end
-    end,
-}
+_G.InterfaceOptions_AddCategory = function(frame)
+    M.settingsCategories[#M.settingsCategories + 1] = { frame = frame, name = frame and frame.name }
+    return true
+end
+_G.InterfaceOptionsFrame_OpenToCategory = function(which)
+    if type(which) == "table" then M.openedCategory = which.name end
+end
 
 -- REU-2's combat check.
 M.inCombat = false
@@ -1147,18 +1304,10 @@ _G.GetCursorPosition = function() return M.pointer[1], M.pointer[2] end
 M.pad = { ui = false, enabled = false, devices = {}, style = "Letters", using = false,
     sticks = {}, axes = {}, buttons = {} }
 M.keysDown = {}
-_G.InputUtil = { IsGamepadUIEnabled = function() return M.pad.ui end }
-_G.C_GamePad = {
-    IsEnabled = function() return M.pad.enabled end,
-    GetAllDeviceIDs = function() return M.pad.devices end,
-    GetDeviceMappedState = function()
-        if #M.pad.devices == 0 then return nil end
-        -- (the sticks { x, y, len }, axes and buttons a test sets in M.pad)
-        return { name = "Mock pad", labelStyle = M.pad.style, buttonCount = #M.pad.buttons,
-            axisCount = #M.pad.axes, stickCount = #M.pad.sticks,
-            buttons = M.pad.buttons, axes = M.pad.axes, sticks = M.pad.sticks }
-    end,
-}
+-- (No gamepad API on 3.3.5 at all: InputUtil and C_GamePad are
+-- Core/Compat/Extras.lua's empty stand-ins, and the pad is never on. Tests
+-- that exercise the pad's UI install tests/pad_api.lua's stand-in for the
+-- duration of the file, deliberately apart from the client-shaped mock.)
 _G.IsUsingGamepad = function() return M.pad.using end
 _G.IsKeyDown = function(key) return M.keysDown[key] == true end
 
@@ -1227,35 +1376,60 @@ _G.GetCursorInfo = function()
 end
 _G.ClearCursor = function() M.cursor = nil end
 
--- REU-4. M.UnitTooltip(guid) runs every registered unit post-call against a
--- fresh tooltip and returns the lines added.
-_G.Enum = { TooltipDataType = { Unit = 2 } }
-M.tooltipCalls = {}
-_G.TooltipDataProcessor = {
-    AddTooltipPostCall = function(kind, fn)
-        M.tooltipCalls[kind] = M.tooltipCalls[kind] or {}
-        table.insert(M.tooltipCalls[kind], fn)
-    end,
-}
-
+-- REU-4: a tooltip for a unit. TooltipDataProcessor is Core/Compat/'s and
+-- rides GameTooltip's OnTooltipSetUnit; its callbacks read data.guid, so the
+-- mock's tooltip has to answer GetUnit and hold a unit token. M.UnitTooltip
+-- sets one up for the guid and returns the lines added meanwhile.
+M.tooltipUnit = nil
 function M.UnitTooltip(guid)
-    local lines = {}
-    local tooltip = { AddLine = function(_, text) lines[#lines + 1] = text end }
-    for _, fn in ipairs(M.tooltipCalls[Enum.TooltipDataType.Unit] or {}) do
-        fn(tooltip, { guid = guid, type = Enum.TooltipDataType.Unit })
+    local token = "tooltipunit"
+    for name, def in pairs(M.units) do
+        if def.guid == guid then token = name break end
     end
+    -- A token the test set up is left alone: only the tooltip's own
+    -- temporary token is cleared afterwards (deleting a nameplate token
+    -- here made later NAME_PLATE_UNIT_ADDED events read no unit at all).
+    local made = false
+    if not M.units[token] or M.units[token].guid ~= guid then
+        M.SetUnit(token, { guid = guid, name = { "Tooltip", "Unit" }, isPlayer = true,
+            class = "WARRIOR", race = "Human", sex = 2, level = 10,
+            faction = "Alliance" })
+        made = true
+    end
+    GameTooltip:SetOwner(nil, "ANCHOR_NONE")
+    GameTooltip.unit = token
+    GameTooltip:RunScript("OnTooltipSetUnit")
+    local lines = {}
+    for _, line in ipairs(GameTooltip.lines or {}) do lines[#lines + 1] = line[1] end
+    if made then M.units[token] = nil end
     return lines
 end
 
 -- What it was last told: `text`, `link` (SetHyperlink) and the `lines`
--- added since SetOwner, each { text, r, g, b, wrap }.
+-- added since SetOwner, each { text, r, g, b, wrap }. It runs its own
+-- OnTooltipSetUnit scripts, which is how Core/Compat/'s
+-- TooltipDataProcessor hears about a unit (it hooks this tooltip):
+-- GetUnit is what the hook reads, so setting .unit is setting the unit.
 _G.GameTooltip = {
-    SetOwner = function(self) self.lines, self.link = {}, nil end,
+    hooks = {},
+    SetOwner = function(self) self.lines, self.link, self.unit = {}, nil, nil end,
+    SetUnit = function(self, unit) self.unit = unit end,
+    -- As 3.3.5: the tooltip remembers the unit's type and token, so
+    -- GetUnit returns two values (`local _, unit = self:GetUnit()`).
+    GetUnit = function(self) return "player", self.unit end,
     SetText = function(self, text) self.text = text end,
     SetHyperlink = function(self, link) self.link = link end,
     AddLine = function(self, text, r, g, b, wrap)
         self.lines = self.lines or {}
         self.lines[#self.lines + 1] = { text, r, g, b, wrap }
+    end,
+    HookScript = function(self, event, fn)
+        self.hooks = self.hooks or {}
+        self.hooks[event] = self.hooks[event] or {}
+        table.insert(self.hooks[event], fn)
+    end,
+    RunScript = function(self, event, ...)
+        for _, fn in ipairs((self.hooks or {})[event] or {}) do fn(self, ...) end
     end,
     Show = function(self) self.shown = true end,
     Hide = function(self) self.shown = false end,
@@ -1292,9 +1466,9 @@ end
 
 -- Loads the addon exactly as the TOC does: one shared namespace, in order.
 -- The TOC's SavedVariables are noted, so Reset can take them away again.
-function M.LoadAddon(root)
+function M.LoadAddon(root, toc)
     local ns = {}
-    for line in io.lines(root .. "/social_diary.toc") do
+    for line in io.lines(toc or (root .. "/social_diary.toc")) do
         local saved = line:match("^##%s*SavedVariables[%w]*:%s*(.-)%s*$")
         for name in (saved or ""):gmatch("[%w_]+") do
             M.savedVariables[#M.savedVariables + 1] = name
@@ -1340,32 +1514,55 @@ for key, value in pairs(M) do
     end
 end
 
--- Every global as the mock left it. A test file that stubs a client
--- function (hooksecurefunc, BuybackItem, ...) or an addon that sets its own
--- (SocialDiary_*, SLASH_*, BINDING_*) leaves it behind; Reset takes it all
--- back. Without that, one file's leftover hooksecurefunc stub made every
--- later load wrap BuybackItem once more, each wrapper holding a whole copy
--- of the addon: ~100 MB a file, ~10 GB a run.
-local pristine = {}
-for key, value in pairs(_G) do pristine[key] = value end
+-- What the client (this mock) offers before any addon loads. Core/Compat/'s
+-- shims are globals too, and their first install is a closure over the first
+-- test file's state -- its own map cache, its own timer table. Later files
+-- reload the addon, every "X = X or ..." guard skips, and that stale first
+-- copy keeps answering. So Reset takes back everything the addon put in _G.
+local clientGlobals = {}
+for key, value in pairs(_G) do clientGlobals[key] = value end
+local clientCMap = {}
+if type(_G.C_Map) == "table" then
+    for key, value in pairs(_G.C_Map) do clientCMap[key] = value end
+end
 
 function M.Reset()
-    for key in pairs(_G) do
-        if pristine[key] == nil then _G[key] = nil end
-    end
-    for key, value in pairs(pristine) do
-        if rawget(_G, key) ~= value then _G[key] = value end
-    end
-
     for i = 1, #named do _G[named[i]] = nil end
     wipe(named)
+
+    -- The previous file's Compat shims (and any global it left) go before
+    -- this file's load installs its own.
+    for key in pairs(_G) do
+        if clientGlobals[key] == nil then _G[key] = nil end
+    end
+    -- And the ones it changed in place: a file that stubs a client function
+    -- (hooksecurefunc, a repaired GetLocale) would otherwise leave the stub
+    -- wrapping once more on every later load.
+    for key, value in pairs(clientGlobals) do
+        if rawget(_G, key) ~= value then _G[key] = value end
+    end
+    if type(_G.C_Map) == "table" then
+        for key in pairs(_G.C_Map) do
+            if clientCMap[key] == nil then _G.C_Map[key] = nil end
+        end
+    end
     for i = 1, #M.savedVariables do _G[M.savedVariables[i]] = nil end
+
+    -- 3.3.5 restores SavedVariables BEFORE the addon loads (which is why retail
+    -- needed "## LoadSavedVariablesFirst" and 3.3.5 has no such directive), and
+    -- Core/DB.lua keeps a table it finds instead of overwriting it. Seeding the
+    -- saved language here is therefore exactly what a player who once picked
+    -- English has in their file, and it keeps this suite's baseline English
+    -- while Locale.default is Chinese on this client (a build below 4.0). A
+    -- test that wants the unset case clears the table itself.
+    _G.SocialDiaryDB = { settings = { language = "enUS" } }
 
     for key, value in pairs(M) do
         if type(value) ~= "function" then M[key] = nil end
     end
     for key, value in pairs(initial) do M[key] = Copy(value) end
     M.frames, M.registered, M.sounds = {}, {}, {}
+    M.reportedArea = nil
 
     _G.UIParent = NewWidget("Frame", "UIParent")
     _G.Minimap = NewMinimap()

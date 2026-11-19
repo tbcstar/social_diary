@@ -99,9 +99,10 @@ end
 -- The damage meter's latest session of meter type `kind` ("DamageTaken",
 -- "HealingDone"), and its id; nil while it does not read.
 local function Session(kind)
+    if not ns.HasDamageMeter() then return nil end
     local meter, types = C_DamageMeter, Enum and Enum.DamageMeterType
     local which = types and types[kind]
-    if not (meter and which) then return nil end
+    if not which then return nil end
     local id, ok, session
     if meter.GetAvailableCombatSessions and meter.GetCombatSessionFromID then
         local okL, sessions = pcall(meter.GetAvailableCombatSessions)
@@ -179,6 +180,7 @@ end
 -- have healed is the user, so it counts; in one it may have been anyone's,
 -- and is left.
 local function Received()
+    if not ns.HasDamageMeter() then return nil end
     local meter = C_DamageMeter
     local sources, id, which = Session("HealingDone")
     if not (sources and meter.GetCombatSessionSourceFromID) then return nil end

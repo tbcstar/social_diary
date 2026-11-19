@@ -338,7 +338,7 @@ local function UpdateEntryRow(row, e)
     row.times:SetPoint("LEFT", anchor, "RIGHT", 4, 0)
 
     row.level:SetText(e.level or "")
-    row.zone:SetText(e.zone)
+    row.zone:SetText(Format.PlaceName(e.zone))
     -- Blank without one: the zone beside it already says where.
     row.subZone:SetText(e.subZone or "")
 

@@ -2,6 +2,11 @@ local addonName, ns = ...
 if not ns.Locale.Is("zhCN") then return end
 
 ns.Locale.Add("zhCN", {
+    -- Core/AutoAdd.lua
+        ["after 5 minutes grouped with you"] = "与你在同一小队待满5分钟",
+        ["after they were seen near you 3 times"] = "在你附近遇见3次",
+        ["added |cffffffff%1$s|r to the diary automatically %2$s."] = "已自动把|cffffffff%1$s|r写进日记：%2$s。",
+        ["added %d person you’ve seen near you before to the diary.|added %d people you’ve seen near you before to the diary.##plural"] = "已把此前在你附近遇见过的%d人写进日记。",
     -- Capture/Menus.lua
     ["Social Diary: open entry"] = "冒险日记：打开条目",
     ["Social Diary: remember this"] = "冒险日记：记录这件事",
@@ -75,8 +80,8 @@ ns.Locale.Add("zhCN", {
     ["on##switch"] = "开启",
     ["off##switch"] = "关闭",
     ["<- you are here"] = "<- 你在这里",
-    ["here: map %1$s, %2$s -- a city."] = "当前位置：地图%1$s，%2$s ——主城。",
-    ["here: map %1$s, %2$s -- not a city."] = "当前位置：地图%1$s，%2$s ——非主城区域。",
+    ["here: map %1$s, %2$s -- a city."] = "当前位置：地图%1$s，%2$s——主城。",
+    ["here: map %1$s, %2$s -- not a city."] = "当前位置：地图%1$s，%2$s——非主城区域。",
     ["open the journal (also plain |cffffd100/sd|r)"] = "打开日记（也可直接输入|cffffd100/sd|r）",
     ["add your target to the diary, or |cffffd100/sd add <name>|r"] = "将你的目标添加到日记，或输入|cffffd100/sd add <name>|r",
     ["open the Remember this picker"] = "打开「记下这件事」",

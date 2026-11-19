@@ -92,20 +92,22 @@ mock.fire("BOSS_KILL", 3493, "Faldrim Anvilmar")
 Eq(#visit.pulls, 2, "BOSS_KILL after ENCOUNTER_END counted another pull")
 Eq(#visit.bossesKilled, 1, "the same kill twice")
 
--- A secret pull: kept without its id or name, and marked.
+-- A withheld pull reads as a plain one on 3.3.5: kept with its id and name,
+-- and the kill names the boss like any other (marking is retail-only).
 mock.now = mock.now + 4 * MIN
 mock.fire("ENCOUNTER_START", mock.secret(3495), mock.secret("Magmatus"), 1, 5)
-Eq(visit.pulls[3].secret, true, "a secret pull is not marked")
-Eq(visit.pulls[3].name, nil, "a secret name was stored")
+Eq(visit.pulls[3].secret, nil, "no restricted values: the pull is not marked")
+Eq(visit.pulls[3].name, "Magmatus", "no restricted values: the name is kept")
+Eq(visit.pulls[3].id, 3495, "no restricted values: the id is kept")
 mock.fire("ENCOUNTER_END", mock.secret(3495), mock.secret("Magmatus"), 1, 5, 1)
-Eq(visit.pulls[3].killed, true, "a secret kill")
-Eq(#visit.bossesKilled, 1, "a secret kill named a boss")
+Eq(visit.pulls[3].killed, true, "the kill")
+Eq(#visit.bossesKilled, 2, "no restricted values: the kill names its boss")
 
 -- Plunder by id alone: the name comes from the dungeon's data.
 mock.now = mock.now + 4 * MIN
 mock.fire("ENCOUNTER_START", 3494, nil, 1, 5)
 mock.fire("ENCOUNTER_END", 3494, nil, 1, 5, 1)
-Eq(visit.bossesKilled[2], "Plunder", "a kill named from its id")
+Eq(visit.bossesKilled[3], "Plunder", "a kill named from its id")
 
 -- A death with no pull open, in a boss fight the pull events missed.
 _G.C_InstanceEncounter = { IsEncounterInProgress = function() return true end }
@@ -132,12 +134,12 @@ Eq(visit.loot[2] and visit.loot[2].guid, STRANGER.guid, "a member's loot by name
 T.Whisper("CHAT_MSG_LOOT", "You receive loot: " .. CLOTH .. "x3.", "")
 Eq(#visit.loot, 2, "grey cloth kept")
 T.Whisper("CHAT_MSG_LOOT", mock.secret("You receive loot: " .. CHEST .. "."), "")
-Eq(#visit.loot, 2, "a secret loot line kept")
+Eq(#visit.loot, 3, "no restricted values: the withheld loot line is read")
 -- A trash green is let go; a blue from trash is kept.
 T.Whisper("CHAT_MSG_LOOT", "You receive loot: " .. Link(6337, "Infantry Leggings of the Whale", 2) .. ".", "")
-Eq(#visit.loot, 2, "a trash green was kept")
+Eq(#visit.loot, 3, "a trash green was kept")
 T.Whisper("CHAT_MSG_LOOT", "You receive loot: " .. Link(6337, "Infantry Leggings of the Whale", 3) .. ".", "")
-Eq(#visit.loot, 3, "a blue from trash was let go")
+Eq(#visit.loot, 4, "a blue from trash was let go")
 table.remove(visit.loot) -- the run's notes below count Plunder's chests only
 
 --------------------------------------------------------------------------
@@ -166,8 +168,9 @@ Eq(first.tries, 2, "Faldrim's tries")
 Eq(first.wipes, 1, "Faldrim's wipe")
 Eq(#first.deaths, 2, "the deaths in Faldrim's pulls")
 Eq(first.at, faldrimAt, "Faldrim's kill time")
-Eq(notes.bosses[2].boss.name, "Plunder", "the second kill")
-Eq(#notes.bosses[2].loot, 2, "the chests are Plunder's, by the loot table")
+Eq(notes.bosses[2].boss.name, "Magmatus", "the second kill, read from the encounter")
+Eq(notes.bosses[3].boss.name, "Plunder", "the third kill")
+Eq(#notes.bosses[3].loot, 3, "the chests are Plunder's, by the loot table")
 Eq(notes.ranBack, 1, "the ghost run")
 Eq(#notes.legs, 2, "the deaths between bosses")
 Eq(notes.legs[1].after.name, "Plunder", "the death after Plunder")

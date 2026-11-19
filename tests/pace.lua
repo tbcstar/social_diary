@@ -690,10 +690,10 @@ ns.Instances.Current = current
 local probe = SocialDiaryCharDB.paceProbe and SocialDiaryCharDB.paceProbe[run.id]
 Check(probe, "the probe kept nothing")
 Eq(probe.events, 5, "the kills seen")
-Eq(probe.readable, 3, "the kills read")
-Eq(probe.hidden, 1, "the kills hidden")
+Eq(probe.readable, 4, "no restricted values: every creature kill reads")
+Eq(probe.hidden, 0, "no restricted values: nothing was hidden")
 Eq(probe.other, 1, "a kill of something not a creature")
-Eq(probe.attackerHidden, 1, "a killer hidden")
+Eq(probe.attackerHidden, 0, "no restricted values: the killer reads too")
 Eq(#probe.kills, 4, "the kills kept, a hidden one with its time only")
 Eq(probe.kills[1].npc, 11318, "the first kill's NPC ID")
 for _, k in ipairs(probe.kills) do
@@ -706,9 +706,9 @@ Eq(probe.events, 5, "a kill outside a run counted")
 said = {}
 SlashCmdList.SOCIALDIARY("pace")
 text = table.concat(said, "\n")
-Check(text:find("kill probe: 5 kills seen: 3 readable, 1 hidden, 1 not creatures; the killer hidden on 1", 1, true),
+Check(text:find("kill probe: 5 kills seen: 4 readable, 0 hidden, 1 not creatures; the killer hidden on 0", 1, true),
     "the report's probe: " .. text)
-Check(text:find("#11318 x2, #11320 x1", 1, true), "the report's kills by NPC ID")
+Check(text:find("#11318 x3, #11320 x1", 1, true), "the report's kills by NPC ID: " .. text)
 said = {}
 SlashCmdList.SOCIALDIARY("pace clear")
 Eq(SocialDiaryCharDB.paceProbe, nil, "the probe not cleared")

@@ -148,14 +148,8 @@ local FORBIDDEN = { "ns.db", "ns.Diary", "ns.Journey", "ns.JourneyRecap", "ns.Se
     "ns.Characters", "ns.Sightings", "ns.Notes", "ns.People", "ns.Reunions", "ns.Heat", "ns.Timeline",
     "ns.Setting(", "ns.SetSetting(", "ns.UI" }
 
-local function Ls(cmd)
-    local list, p = {}, assert(io.popen(cmd))
-    for line in p:lines() do list[#list + 1] = line end
-    p:close()
-    return list
-end
-
-local files = Ls("find UI/Style -name '*.lua' 2>/dev/null | sort")
+local FS = T.FS
+local files = FS.Find("UI/Style")
 Check(#files >= 8, "UI/Style/ not found from " .. (os.getenv("PWD") or "?"))
 for _, file in ipairs(files) do
     local f = assert(io.open(file, "r"))

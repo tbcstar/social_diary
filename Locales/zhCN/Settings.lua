@@ -35,7 +35,7 @@ ns.Locale.Add("zhCN", {
     ["Older matches keep their map, result and times, and the people from your diary. Everyone else is rubbed out, leaving only a count."] = "更早的对局仍会保留地图、结果、时间，以及日记中记录的玩家。其他玩家的信息将被清除，仅保留人数统计。",
     ["Warnings"] = "警告",
     ["Warn me before old scoreboards lose their strangers"] = "旧记分板开始清除陌生玩家记录前提醒我",
-    ["A hint in the diary 25 matches before, and again as it nears. Applies to every character."] = "在日记里提前 25 场对局给出提示，临近时再提醒一次。适用于所有角色。",
+    ["A hint in the diary 25 matches before, and again as it nears. Applies to every character."] = "在日记里提前25场对局给出提示，临近时再提醒一次。适用于所有角色。",
     -- UI/Settings/Sections/Changelog.lua
     ["The full history is on CurseForge and GitHub."] = "完整历史见CurseForge和GitHub。",
     ["Thanks to %s"] = "感谢%s",
@@ -103,7 +103,7 @@ ns.Locale.Add("zhCN", {
     ["the hints come again, each the next time its page is open."] = "提示会在下次打开对应页面时再次出现。",
     ["Show hints again"] = "再次显示提示",
     ["Show a hint after a big update"] = "大更新后显示提示",
-    ["When a new major version such as 3.0 is installed, the book points you to what changed. Applies to every character."] = "安装 3.0 这样的新大版本后，书里会指出改了些什么。适用于所有角色。",
+    ["When a new major version such as 3.0 is installed, the book points you to what changed. Applies to every character."] = "安装3.0这样的新大版本后，书里会指出改了些什么。适用于所有角色。",
     ["Show a hint about a new language"] = "显示关于新语言的提示",
     ["The first time the diary is written in another language, the book says the translation is machine-made and how to suggest a better wording. Applies to every character."] = "第一次用别的语言写日记时，书里会说明这份翻译是机翻的，以及怎么提出更好的译法。适用于所有角色。",
     ["Interface"] = "界面",
@@ -158,6 +158,7 @@ ns.Locale.Add("zhCN", {
     ["Memory"] = "存储",
     -- UI/Settings/Sections/Recording.lua
     ["Data needed for the 'Your Diary' Page: Where you go and what you do."] = "「你的日记」页面所需的数据：你去哪里、做了什么。",
+    ["This game client cannot measure distances: where you level, your dungeons and your fights are still kept, but the roads and the stops between them cannot be recorded."] = "本客户端无法测量距离：升级地点、副本行程和战斗仍会记录，但路线与途中的停留点无法记录。",
     ["Chat"] = "聊天",
     ["Keep whisper, /say and party text"] = "保留密语、/say和小队聊天内容",
     ["some text in dungeons cannot be accessed, fyi."] = "提示：副本中的部分文字无法获取。",
@@ -168,6 +169,9 @@ ns.Locale.Add("zhCN", {
     ["Sightings"] = "邂逅记录",
     ["Only works if nameplates are on. Doesn't work in dungeons, raids or battlegrounds."] = "仅当姓名板开启时有效。副本、团队副本和战场中无效。",
     ["Enable sightings in cities - performance warning:"] = "在主城中启用邂逅记录——性能警告：",
+        ["Auto-Add Players"] = "自动添加玩家",
+        ["Off unless you switch it on. Adds someone after 5 minutes grouped with you without a break (not in battlegrounds), or once they’ve been seen near you 3 separate times. Anyone you remove from the diary stays out."] = "默认关闭。与你在同一小队连续待满5分钟（战场除外），或在你附近被遇见3次后，自动添加对方。被你从日记中移除的人不会再被加回来。",
+        ["Sightings count only while “Notice who passes you in the open world” is on."] = "仅当“注意在野外与你擦肩而过的人”开启时才统计邂逅。",
     -- UI/Settings/Sections/Shortcuts.lua
     ["Open the journal"] = "打开冒险日记",
     ["Opens the journal"] = "打开冒险日记",

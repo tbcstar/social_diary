@@ -65,14 +65,14 @@ Check(P.languageHint:GetText():find("every character", 1, true), "the page does 
 --------------------------------------------------------------------------
 Section("the choice: the game's language, then every language offered")
 
-Eq(ns.Setting("language"), "auto", "setup: the default")
-Eq(P.language.choice:GetText(), "The game's language (English)", "what is chosen, with one language offered")
+Eq(ns.Setting("language"), "enUS", "setup: the saved choice the suite starts from")
+Eq(P.language.choice:GetText(), "English", "what is chosen, with one language offered")
 mock.contextMenu = nil
 P.language.choice:Click()
 Check(mock.contextMenu ~= nil, "the choice's click opened no menu")
 Eq(Labels(mock.contextMenu), "The game's language (English) | English", "the choices with one language offered")
-Check(mock.MenuSelected("The game's language (English)"), "the game's language is not marked as chosen")
-Check(not mock.MenuSelected("English"), "English marked while the game's language is chosen")
+Check(mock.MenuSelected("English"), "English is not marked as chosen")
+Check(not mock.MenuSelected("The game's language (English)"), "the game's language marked while English is chosen")
 
 -- Another language offers itself (as a locale's Grammar.lua does).
 Locale.Offer("xxXX", "Xxish")
@@ -134,10 +134,22 @@ P.language.choice:Click()
 Check(mock.MenuClick("English"), "English is not among the choices")
 Eq(ns.Setting("language"), "enUS", "English not written")
 Check(not P.languageState:IsShown() and not P.languageReload:IsShown(), "a reload offered for the language read")
+
+-- The game's language is this port's, Chinese (Locales/Locale.lua: on an
+-- interface of 30300 and above, below 40000), even where the client itself
+-- says enUS: choosing it is a change like any other, so it says so and
+-- offers the reload.
 P.language.choice:Click()
 Check(mock.MenuClick("The game's language (English)"), "the game's language is not among the choices")
 Eq(ns.Setting("language"), "auto", "the game's language not written")
-Check(not P.languageState:IsShown() and not P.languageReload:IsShown(), "a reload offered for the game's language")
+Check(P.languageState:IsShown() and P.languageReload:IsShown(),
+    "no reload offered for the game's language, which the diary reads in Chinese")
+
+-- And back to English, which is what it reads: the rest comes back up.
+P.language.choice:Click()
+Check(mock.MenuClick("English"), "English is not among the choices")
+Eq(ns.Setting("language"), "enUS", "English not written")
+Check(not P.languageState:IsShown() and not P.languageReload:IsShown(), "a reload offered for the language read")
 Eq(P.languageRest.recorded.points[1].args[4], restY,
     "the rest of the page did not move back up")
 
@@ -160,6 +172,15 @@ Check(mock.MenuClick("The game's language (English)"), "the game's language cann
 Eq(ns.Setting("language"), "auto", "the game's language not written")
 Check(P.languageState:IsShown() and not P.languageReload:IsShown(), "the line went, or a reload came")
 Locale.stuck = false
+P:Refresh()
+-- Without a late choice the page is back to the ordinary case: the game's
+-- language is a real change on this port (Chinese), so the waiting line and
+-- the reload take the stuck line's place.
+Check(P.languageState:IsShown() and P.languageReload:IsShown(),
+    "the stuck line went and no reload came for the game's language")
+Check(P.languageState:GetText():find("once the interface reloads", 1, true),
+    "the line does not say the choice waits: " .. tostring(P.languageState:GetText()))
+ns.SetSetting("language", "enUS")
 P:Refresh()
 Check(not P.languageState:IsShown(), "the line stays without cause")
 
@@ -214,11 +235,15 @@ Press("PADDRIGHT")
 Eq(At().kind, "choice", "the first thing on the page is not the choice")
 Eq(At().frame, P.language.choice, "the pad is not on what is chosen")
 Eq(Prompt(), "See the choices", "the choice's prompt")
+-- The game's language asks for Chinese on this port, so the choice waits
+-- and the reload stands between it and the rest of the page.
 Press("PADDDOWN")
-Eq(At().frame, P.languageFeedback, "down: not the way to Feedback (nothing waits: no reload to stand on)")
+Eq(At().frame, P.languageReload, "down: not the reload offered for the game's language")
 Eq(Prompt(), "Choose", "a link's prompt")
 Press("PADDDOWN")
-Eq(At().frame, P.languageFeedback, "down again: something under Feedback on an English diary")
+Eq(At().frame, P.languageFeedback, "down again: not the way to Feedback")
+Press("PADDUP")
+Eq(At().frame, P.languageReload, "up: not back on the reload")
 Press("PADDUP")
 Eq(At().frame, P.language.choice, "up: not back on the choice")
 

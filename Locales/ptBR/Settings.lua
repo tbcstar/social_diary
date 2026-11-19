@@ -158,6 +158,7 @@ ns.Locale.Add("ptBR", {
     ["Memory"] = "Memória",
     -- UI/Settings/Sections/Recording.lua
     ["Data needed for the 'Your Diary' Page: Where you go and what you do."] = "Dados necessários para a página 'Seu Diário': para onde você vai e o que você faz.",
+    ["This game client cannot measure distances: where you level, your dungeons and your fights are still kept, but the roads and the stops between them cannot be recorded."] = "Este cliente do jogo não consegue medir distâncias: onde você sobe de nível, suas masmorras e seus combates continuam registrados, mas as estradas e as paradas entre eles não podem ser anotadas.",
     ["Chat"] = "Chat",
     ["Keep whisper, /say and party text"] = "Manter mensagens privadas, /dizer e texto de grupo",
     ["some text in dungeons cannot be accessed, fyi."] = "obs.: algum texto em masmorras não pode ser acessado.",

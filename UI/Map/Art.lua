@@ -79,7 +79,9 @@ end
 -- explored or not (the revealMap setting by default).
 function MapArt.For(mapID, all)
     if all == nil then all = ns.Setting("revealMap") == true end
-    if not (C_Map.GetMapArtLayers and C_Map.GetMapArtLayerTextures) then return nil end
+    -- The shim on 3.3.5a has no map canvases at all, and may not exist yet
+    -- (or at all): either way there is no art to draw, and no error.
+    if not (C_Map and C_Map.GetMapArtLayers and C_Map.GetMapArtLayerTextures) then return nil end
     local layers = C_Map.GetMapArtLayers(mapID)
     local layer = layers and layers[1]
     if not layer or not layer.layerWidth or layer.layerWidth <= 0 then return nil end

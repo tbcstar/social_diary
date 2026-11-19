@@ -16,7 +16,7 @@ local L = ns.L
 
 -- The names the key bindings window shows are the reader's; the binding
 -- names themselves (Bindings.xml) stay as they are.
-BINDING_HEADER_SOCIAL_DIARY = "Social Diary"
+BINDING_HEADER_SOCIAL_DIARY = L["Social Diary"]
 BINDING_NAME_SOCIALDIARY_REMEMBER = L["Remember this"]
 
 -- With a player targeted who is not in the diary yet, the page to add them

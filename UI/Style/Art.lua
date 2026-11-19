@@ -25,11 +25,13 @@ Style.ART = {
     classes = { "Interface\\TargetingFrame\\UI-Classes-Circles" },
     book = { "Interface\\Icons\\INV_Misc_Book_09" },
     map = { "Interface\\Icons\\INV_Misc_Map_01" },
-    search = { "Interface\\Common\\UI-Searchbox-Icon" },
-    together = { "Interface\\GossipFrame\\TabardGossipIcon" },
+    -- The retail gossip-frame tiles and search box are not in this client's
+    -- archives; the spellbook-side icons are (checked against the client).
+    search = { "Interface\\Common\\UI-Searchbox-Icon", "Interface\\Icons\\INV_Misc_Spyglass_02" },
+    together = { "Interface\\GossipFrame\\TabardGossipIcon", "Interface\\Icons\\INV_Shirt_01" },
     -- A word said: the timeline's chat activity, and a /say.
-    talk = { "Interface\\GossipFrame\\GossipGossipIcon" },
-    trade = { "Interface\\GossipFrame\\VendorGossipIcon" },
+    talk = { "Interface\\GossipFrame\\GossipGossipIcon", "Interface\\Icons\\INV_Misc_Note_02" },
+    trade = { "Interface\\GossipFrame\\VendorGossipIcon", "Interface\\Icons\\INV_Misc_Coin_01" },
     -- An instance visit on the timeline (TLN-4).
     dungeon = { "Interface\\Icons\\INV_Misc_Key_03", "Interface\\Icons\\INV_Sword_04" },
     -- A rare killed together: a timeline moment (TLN-2).
@@ -65,9 +67,23 @@ local override = {}
 
 local resolved = {}
 
+-- Whether the client has a file, for the candidate lists above. Retail says
+-- so outright (GetFileIDFromPath, 10.x); 3.3.5a has no file lookup at all, so
+-- a texture of our own is asked instead: SetTexture on a file the client does
+-- not have leaves GetTexture() nil, on one it has returns the path. Either
+-- way the answer is cached in `resolved`, so this costs one call per key.
+local probe
+
 local function Exists(path)
-    if not GetFileIDFromPath then return true end  -- cannot tell; try it
-    return GetFileIDFromPath(path) ~= nil
+    if GetFileIDFromPath then return GetFileIDFromPath(path) ~= nil end
+    if not probe then
+        if not (UIParent and UIParent.CreateTexture) then return true end
+        probe = UIParent:CreateTexture(nil, "BACKGROUND")
+        if probe.SetTexture and not probe.GetTexture then return true end -- cannot tell; try it
+    end
+    probe:SetTexture(path)
+    local got = probe.GetTexture and probe:GetTexture()
+    return got ~= nil and got ~= ""
 end
 
 function Style.Art(key)
@@ -163,7 +179,18 @@ function Style.InstanceArt(visit)
     if instanceArt[key] == nil then
         instanceArt[key] = false
         local bare = visit.name and visit.name:gsub("^The ", ""):gsub("[^%a]", "")
-        for _, name in ipairs({ INSTANCE_ART[visit.instanceID] or false, bare or false }) do
+        -- The art files are named in English whatever the reader's language,
+        -- so the saved name comes first; a CoA name joins only when it is
+        -- Latin too, and a Chinese one cannot turn a hit into a miss.
+        local said = ns.CoA and ns.CoA.Name
+        local other
+        if type(said) == "function" then
+            local ok, text = pcall(said, visit)
+            if ok and type(text) == "string" and text ~= visit.name and not text:find("[^\1-\127]") then
+                other = text:gsub("^The ", ""):gsub("[^%a]", "")
+            end
+        end
+        for _, name in ipairs({ INSTANCE_ART[visit.instanceID] or false, bare or false, other or false }) do
             if name and Exists(INSTANCE_ART_PATH .. name) then
                 instanceArt[key] = INSTANCE_ART_PATH .. name
                 break

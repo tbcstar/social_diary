@@ -164,7 +164,7 @@ local function Moment(c, s, guid)
         if door then m.x, m.y = door.x, door.y end
         local seconds = (visit.endedAt or ns.Now()) - visit.startedAt
         -- Its own words, no level (Text.Dungeon reads none here).
-        m.kind, m.seg = "dungeon", { name = visit.name, seconds = seconds, from = visit.startedAt }
+        m.kind, m.seg = "dungeon", { name = ns.UI.Format.VisitName(visit), seconds = seconds, from = visit.startedAt }
     elseif item.kind == "row" then
         local row = item.row
         local spec = ns.Rows.Get(row.type)

@@ -174,7 +174,14 @@ end
 -- The user's auras only: ns.On would hear every nameplate's too, and in a
 -- crowd those come many a second.
 local frame = CreateFrame("Frame")
-frame:RegisterUnitEvent("UNIT_AURA", "player")
+if frame.RegisterUnitEvent then
+    frame:RegisterUnitEvent("UNIT_AURA", "player")
+else
+    -- WotLK has no RegisterUnitEvent (the client's own frames register
+    -- UNIT_AURA and read its unit); the handler is the same either way, the
+    -- unit arriving as the event's first argument.
+    frame:RegisterEvent("UNIT_AURA")
+end
 frame:SetScript("OnEvent", function(_, _, unit, info)
     if ns.Plain(unit) ~= "player" or not ns.ownGUID then return end
     Changed(info)

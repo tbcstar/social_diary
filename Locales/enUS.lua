@@ -577,6 +577,7 @@ ns.Locale.Add("enUS", {
     ["Right-click to open the settings."] = "Right-click to open the settings.",
     ["Drag to move this button."] = "Drag to move this button.",
     -- UI/Blizzard/Signpost.lua
+    ["Social Diary"] = "Social Diary",
     ["The settings live in your journal now, behind the grey ribbon at the bottom of the book."] = "The settings live in your journal now, behind the grey ribbon at the bottom of the book.",
     ["Open the settings"] = "Open the settings",
     -- UI/Blizzard/SocialTab.lua
@@ -1540,6 +1541,7 @@ ns.Locale.Add("enUS", {
     ["Memory"] = "Memory",
     -- UI/Settings/Sections/Recording.lua
     ["Data needed for the 'Your Diary' Page: Where you go and what you do."] = "Data needed for the 'Your Diary' Page: Where you go and what you do.",
+    ["This game client cannot measure distances: where you level, your dungeons and your fights are still kept, but the roads and the stops between them cannot be recorded."] = "This game client cannot measure distances: where you level, your dungeons and your fights are still kept, but the roads and the stops between them cannot be recorded.",
     ["Chat"] = "Chat",
     ["Keep whisper, /say and party text"] = "Keep whisper, /say and party text",
     ["some text in dungeons cannot be accessed, fyi."] = "some text in dungeons cannot be accessed, fyi.",
@@ -1629,7 +1631,6 @@ ns.Locale.Add("enUS", {
     ["Open me"] = "Open me",
     -- UI/Windows/Intro/Tour.lua
     ["Continue"] = "Continue",
-    ["Social Diary"] = "Social Diary",
     ["Wherever you go, the diary marks your path. Each level you reach gets a page like this."] = "Wherever you go, the diary marks your path. Each level you reach gets a page like this.",
     ["What you did"] = "What you did",
     ["Red splats show where you've fought. Memorable moments, such as finding your first green item, are shown in cards."] = "Red splats show where you've fought. Memorable moments, such as finding your first green item, are shown in cards.",
@@ -1642,6 +1643,7 @@ ns.Locale.Add("enUS", {
     ["Thex is in your diary now. When you meet again, the diary will tell you."] = "Thex is in your diary now. When you meet again, the diary will tell you.",
     ["Click him to see his page."] = "Click him to see his page.",
     ["Wolfskin Bracers"] = "Wolfskin Bracers",
+    ["Your first green!"] = "Your first green!",
     ["%d of 5"] = "%d of 5",
     ["An Example"] = "An Example",
     ["This is how the people you add will look."] = "This is how the people you add will look.",

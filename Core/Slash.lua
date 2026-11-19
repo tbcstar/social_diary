@@ -192,7 +192,10 @@ end
 local MapName = ns.MapName
 
 local function RowZone(row)
-    return ns.RowZone(row) or (row.mapID and Fmt(L["map %s"], row.mapID)) or "?"
+    -- Printed for the player to read, so the place is turned over here;
+    -- everything the command compares or stores keeps the client's name.
+    return ns.ZoneShown(ns.RowZone(row))
+        or (row.mapID and Fmt(L["map %s"], row.mapID)) or "?"
 end
 
 -- JNL-3's data: the last 24 hours (or `hours`), grouped by zone.

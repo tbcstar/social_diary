@@ -119,9 +119,12 @@ Eq(m.map, 489, "the map id")
 Eq(m.faction, 0, "the user's side (Horde)")
 Eq(m.state, "open", "state while it runs")
 Eq(#m.players, 5, "the board's names were not gathered")
+-- The board is set to hand out restricted values, which 3.3.5 does not have:
+-- everything reads plainly and is kept.
 for _, p in ipairs(Matches.Players(m)) do
-    Eq(p.guid, nil, "a secret GUID was kept: " .. tostring(p.name))
-    Eq(p.kb, nil, "a number was kept during play")
+    Check(type(p.guid) == "string" and p.guid:sub(1, 7) == "Player-",
+        "no restricted values: the GUID is kept: " .. tostring(p.name))
+    Eq(p.kb, nil, "the board hands out names, not numbers, during play")
 end
 Check(asked > 0, "the board was never asked for")
 
@@ -147,7 +150,7 @@ local tullus
 for _, p in ipairs(Matches.Players(m)) do if p.name == "Tullus Hostilius" then tullus = p end end
 Check(tullus, "an enemy by nameplate was not kept")
 Eq(tullus and tullus.side, 1, "the nameplate enemy's side")
-Eq(tullus and tullus.guid, nil, "a secret GUID was kept from a nameplate")
+Eq(tullus and tullus.guid, "Player-4620-00123456", "no restricted values: the nameplate GUID is kept")
 
 -- The user dies.
 mock.fire("PLAYER_DEAD")
@@ -169,8 +172,8 @@ mock.fire("PVP_MATCH_COMPLETE", mock.secret(0), 1320)   -- the payload's winner 
 Eq(m.winner, 0, "the winner from GetActiveMatchWinner")
 Eq(m.duration, 1320, "the duration")
 Eq(m.state, "open", "closed before the board was tried")
-mock.RunTimers()                 -- first try: still secret
-Eq(m.state, "open", "closed on a secret board")
+mock.RunTimers()                 -- the board reads plainly on 3.3.5: it closes at once
+Eq(m.state, "complete", "no restricted values: the first try closes it")
 secret = false
 for _ = 1, 3 do mock.RunTimers() end
 Eq(m.state, "complete", "the readable board did not close the match")
@@ -204,7 +207,9 @@ winnerNow = 1
 mock.now = mock.now + 900
 mock.fire("PVP_MATCH_COMPLETE", 1, 900)
 for _ = 1, 20 do mock.RunTimers() end
-Eq(m2.state, "noboard", "a board that never read")
+-- A board that never reads is retail's restricted-value scenario; on 3.3.5
+-- the board always reads, so the match closes like any other.
+Eq(m2.state, "complete", "no restricted values: the board always reads")
 Eq(Matches.Won(m2), false, "an Alliance win read as won")
 Eq(#m2.players, 5, "the names from play were lost")
 Out()

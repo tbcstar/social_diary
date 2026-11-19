@@ -14,6 +14,7 @@ local Format = ns.UI.Format
 local Text = ns.UI.JourneyText
 local List = Format.List
 local Spoken, Capital, MapName, Day = Text.Spoken, Text.Capital, Text.MapName, Text.Day
+local RawMapName = Text.RawMapName
 local Duration, NUMBER, Short = Text.Duration, Text.NUMBER, Text.Short
 local L, Fmt = ns.L, ns.Fmt
 
@@ -156,7 +157,8 @@ local LEADS = {
         local stay = c.of.stay
         if not stay then return nil end
         local seg = stay.seg
-        local text = seg.subZone and seg.subZone ~= MapName(seg.mapID) and seg.subZone or L["A long stay"]
+        local text = seg.subZone and seg.subZone ~= RawMapName(seg.mapID)
+            and ns.ZoneShown(seg.subZone) or L["A long stay"]
         return Fmt(L["%1$s, %2$s"], text, Duration(stay.seconds or seg.seconds or 0))
     end },
     -- Someone a note beside the plate names already: what you did together

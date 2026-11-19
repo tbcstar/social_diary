@@ -60,6 +60,50 @@ end
 
 -- The wing a boss belongs to (INS-27: a visit to a shared instance is
 -- named after the wing of its first kill), or nil.
+-- Naming a dungeon by the place the client shows (features-port's
+-- Core/Dungeons contract): the zone name the player is in, or the map id
+-- GetCurrentMapAreaID gives. Names come from Forever's data first, then from
+-- the CoA client tables (Capture/CoA.lua, read lazily because Capture loads
+-- after Core). One argument; nil when the name is unknown, never an error, so
+-- callers can use the answer as an id without a guard.
+local function CoADungeon(key)
+    local CoA = ns.CoA
+    if type(CoA) ~= "table" or type(CoA.Dungeon) ~= "function" then return nil end
+    local ok, entry = pcall(CoA.Dungeon, key)
+    if not ok then return nil end
+    return entry
+end
+
+function Dungeons.ByZone(zoneName)
+    if type(zoneName) ~= "string" or zoneName == "" then return nil end
+    local key = Norm(zoneName)
+    local list = DCF().Dungeons
+    if list then
+        for id in pairs(list) do
+            local name = Dungeons.Name(id)
+            if type(name) == "string" and Norm(name) == key then return name end
+        end
+    end
+    local entry = CoADungeon(zoneName)
+    return entry and entry.name or nil
+end
+
+function Dungeons.ByMapID(mapID)
+    if type(mapID) ~= "number" then return nil end
+    local list = DCF().Dungeons
+    if list then
+        for id in pairs(list) do
+            for _, floor in ipairs(Dungeons.Floors(id) or {}) do
+                if floor.uiMapID == mapID then return Dungeons.Name(id) end
+            end
+        end
+    end
+    -- CoA keys dungeons by Map.dbc id; the client's area id is a different
+    -- domain, so this only answers for the few ids that coincide.
+    local entry = CoADungeon(mapID)
+    return entry and entry.name or nil
+end
+
 function Dungeons.WingOf(instanceID, bossName)
     local key = Norm(bossName)
     for _, w in ipairs(Dungeons.Wings(instanceID) or {}) do

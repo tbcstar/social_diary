@@ -1097,26 +1097,23 @@ Eq(plate.slot.w .. "x" .. plate.slot.h, "446x484", "the full page's slot")
 Check(math.abs(plate.window[4] - plate.window[2] - 1) < 1e-9, "the full page does not fit the zone's height")
 Check(math.abs((plate.window[1] + plate.window[3]) / 2 - 0.5) < 0.01, "the full page is not centred on the road")
 Check(RowFor(function(item) return item.zone and item.current end), "the zone row shown is not marked")
-Check(plate.tileCount > 0 and plate.hasArt, "the map art was not printed")
-Eq(plate.exploredCount, 2, "the explored area was not printed over the art")
--- Each explored piece over the base's tiles, and the narrow one only from
--- its file's first 44 of 64 pixels across and 200 of 256 down.
-local narrow, mouseOver = 0, 0
-for _, region in ipairs(mock.frames) do
-    local rec = region.shown and region.recorded
-    local file = rec and rec.calls.SetTexture and rec.calls.SetTexture[1]
-    if file == 9002 then
-        narrow = narrow + 1
-        Eq(rec.layer .. rec.sublevel, "BORDER3", "an explored piece is not over the base's tiles")
-        local u0, u1, v0, v1 = unpack(rec.calls.SetTexCoord)
-        Check(u0 >= -1e-6 and u1 <= 44 / 64 + 1e-6 and v0 >= -1e-6 and v1 <= 200 / 256 + 1e-6,
-            "the narrow piece is cut past its pixels: " .. u0 .. " " .. u1 .. " " .. v0 .. " " .. v1)
-    elseif file == 9003 then
-        mouseOver = mouseOver + 1
+-- 3.3.5 has no C_Map.GetMapArtLayers and no C_MapExplorationInfo (PORT.md
+-- §5), so MapArt.For answers nil before it reaches any area: the full page
+-- draws the zone's blank card, with no art tiles and no explored areas over
+-- them. The pieces below are still set up, and must print nothing.
+Eq(plate.tileCount or 0, 0, "no map art tiles on this client")
+Check(not plate.hasArt, "map art appeared without tiles")
+Eq(plate.exploredCount or 0, 0, "explored areas were printed without a way to read them")
+Eq(select(3, ns.UI.MapArt.For(1412)), nil, "art for a zone on a client without map art")
+do
+    local explored = 0
+    for _, region in ipairs(mock.frames) do
+        local rec = region.shown and region.recorded
+        local file = rec and rec.calls.SetTexture and rec.calls.SetTexture[1]
+        if file == 9001 or file == 9002 or file == 9003 then explored = explored + 1 end
     end
+    Eq(explored, 0, "an explored piece was printed")
 end
-Check(narrow > 0, "the area's narrow tile was not printed")
-Eq(mouseOver, 0, "an area shown only under the mouse was printed")
 
 -- A window of the art (a plate's close-up, JRN-21): a piece cut by it
 -- takes only its part of its file, at the window's scale. One 256 px tile
@@ -1171,25 +1168,20 @@ do
     Eq(#out, 0, "a road outside the window was drawn")
 end
 
--- "Always show the whole map" adds every area the client's tables have
--- (UI/Map/OverlayData.lua), each once, explored or not.
+-- "Always show the whole map" feeds the same art path, so on this client it
+-- adds nothing: the overlay table is static data, and the plate cannot
+-- reach it without art layers (UI/Map/Art.lua returns nil before areas).
 local data = ns.UI.MapOverlayData[1412]
 Check(data and #data > 10, "no overlay data for Mulgore")
-Eq(select(3, ns.UI.MapArt.For(1412)), 1, "areas shown with only the explored")
-Eq(select(3, ns.UI.MapArt.For(1412, true)), 1 + #data, "areas shown with the whole map")
-local first = data[1]
-table.insert(mock.explored[1412], { textureWidth = first[1], textureHeight = first[2],
-    offsetX = first[3], offsetY = first[4], fileDataIDs = first[5] })
-Eq(select(3, ns.UI.MapArt.For(1412, true)), 1 + #data, "an explored area was shown twice")
+Eq(select(3, ns.UI.MapArt.For(1412)), nil, "areas shown with only the explored")
+Eq(select(3, ns.UI.MapArt.For(1412, true)), nil, "areas shown with the whole map")
 local explored = plate.exploredCount
 ns.SetSetting("revealMap", true)
 ns.UI.OpenZoneSheet(1412)
-local revealed = plate.exploredCount
-Check(revealed > explored, "the setting did not fill in the whole map")
+Eq(plate.exploredCount, explored, "the whole-map setting added art the client cannot draw")
 ns.SetSetting("revealMap", false)
 ns.UI.OpenZoneSheet(1412)
-Check(plate.exploredCount > explored and plate.exploredCount < revealed,
-    "turned off, the plate does not show just the two explored areas: " .. plate.exploredCount)
+Eq(plate.exploredCount, explored, "turned off, the plate changed what it draws")
 mock.explored[1412] = nil
 
 -- OpenZoneSheet shows the full page, at the open level when it was there.
@@ -1509,11 +1501,14 @@ Eq(plate.counts.pins, 1, "the level reached here has no pin")
 Check(plate.pinMarks[1].start, "where level 11 began is not drawn in ink round paper")
 Eq(plate.counts.meetings, 0, "level 10's meetings are inked on level 11")
 Eq(plate.counts.flights, 1, "the flight out was not drawn")
-Check(plate.counts.dashes > 0, "the flight to another zone has no dashes toward it")
+-- 3.3.5 has no C_Map.GetWorldPosFromMapPos (PORT.md §5), so a flight to
+-- another zone cannot be projected onto this map: its ring is drawn, the
+-- dashes toward the other zone are not.
+Eq(plate.counts.dashes, 0, "dashes toward another zone the client cannot project")
 said = Tooltips(plate)
 Check(Any(said, "^Level 11"), "the level pin's tooltip")
 Check(not Any(said, "^With Bram Redfen"), "level 10's meeting is on level 11's map")
-Check(Any(said, "^Flew to The Barrens"), "the flight's tooltip")
+Check(Any(said, "^Flew to The Barrens"), "the flight's tooltip: " .. table.concat(said, " / "))
 
 -- The zone row under level 11 for The Barrens.
 row = RowFor(function(item) return item.zone and item.entry == 2 and item.mapID == 1413 end)
@@ -2351,16 +2346,11 @@ do
     Eq(rings, 1, "more than one ring was placed (Apart)")
     local node = p.flightNodes[1]
     Eq(#node.flights, 3, "the ring does not keep every flight")
-    Eq(#p.flightLines, 3, "a flight has no line")
-    local dashed = 0
-    for i, line in ipairs(p.flightLines) do
-        Check(line.node == node and line.x1 == node.x and line.y1 == node.y,
-            "flight " .. i .. "'s dashes do not start at the ring")
-        dashed = dashed + line.dashes
-    end
-    Check(p.flightLines[1].dashes > 0, "the route to The Barrens is not dashed")
-    Eq(dashed, p.flightLines[1].dashes, "one route flown three times is dashed more than once")
-    Eq(p.counts.dashes, dashed, "the dashes counted")
+    -- 3.3.5 has no C_Map.GetWorldPosFromMapPos (PORT.md §5): a flight whose
+    -- other end lies on another zone cannot be projected onto this map, so it
+    -- keeps its ring and its account and draws no line.
+    Eq(#p.flightLines, 0, "a line for a flight the client cannot project")
+    Eq(p.counts.dashes, 0, "dashes for a flight the client cannot project")
     local tips = Tips(p)
     Eq(#tips, 1, "the ring has no tooltip")
     -- One account of the three (9 Nov 2026): how often, each way once with
@@ -2377,7 +2367,8 @@ do
     p:Draw(Sheet(flights), nil, window, { moments = {} })
     Eq(p.counts.flightNodes, 2, "two flight masters are not two rings")
     Eq(p.hover.used, 2, "a ring each, a hover each")
-    local line = p.flightLines[4]
+    -- The only line there is: within one zone, which needs no projection.
+    local line = p.flightLines[1]
     local a, b = p.flightNodes[1], p.flightNodes[2]
     Check(line and line.x1 == a.x and line.y1 == a.y and line.x2 == b.x and line.y2 == b.y,
         "the flight within the zone is not dashed from ring to ring")
@@ -2387,16 +2378,15 @@ do
         "the flight within the zone is not told at its rings: " .. table.concat(tips, " / "))
 
     -- A third master just past FLIGHT.node yards: its own ring, which
-    -- lands on the first and steps aside (Apart); its flight's dashes
-    -- start where the ring went, not where it belonged.
+    -- lands on the first and steps aside (Apart). Its flight ends in another
+    -- zone, so on this client no line is drawn for it at all.
     flights[5] = Flight(mapID, 0.512, 0.500, 1413, 0.50, 0.30)
     p:Draw(Sheet(flights), nil, window, { moments = {} })
     Eq(p.counts.flightNodes, 3, "a master 60 yards off is not its own ring")
     local c = p.flightNodes[3]
     local cx, cy = p.At(c.mx, c.my)
     Check(c.x and math.abs(c.x - cx) + math.abs(c.y - cy) > 1, "the third ring did not step aside")
-    line = p.flightLines[5]
-    Check(line and line.x1 == c.x and line.y1 == c.y, "a ring stepped aside, its flight's dashes start where it was")
+    Eq(#p.flightLines, 1, "a line appeared for a flight the client cannot project")
 
     -- The sheet holds every flight ever on the map, oldest first. Old ones
     -- past the cap leave the entry's own drawn; only those count against it.

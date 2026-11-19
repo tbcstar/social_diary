@@ -142,7 +142,11 @@ local function OnMenu(tag, _, rootDescription, contextData)
     end
 end
 
-if Menu and Menu.ModifyMenu then
+-- Retail's Menu is a table namespace (Menu.ModifyMenu). A non-table global
+-- under that name means there is no menu API here: Core/Compat/Extras.lua
+-- defines a helper named Menu on this client, and indexing a function would
+-- throw at load and take the whole capture file down with it.
+if type(Menu) == "table" and Menu.ModifyMenu then
     for i = 1, #MENU_TAGS do
         local tag = MENU_TAGS[i]
         Menu.ModifyMenu(tag, function(owner, rootDescription, contextData)

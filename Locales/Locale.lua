@@ -30,9 +30,16 @@
 local addonName, ns = ...
 
 --------------------------------------------------------------------------
--- Which language. The client's, unless the reader chose another (Settings,
--- Interface > Language: the account setting `language`, "auto" or a
--- locale's id).
+-- Which language. This port's own, unless the reader chose another
+-- (Settings, Interface > Language: the account setting `language`,
+-- "auto" or a locale's id).
+--
+-- Social Diary was written for a retail client, whose Interface is 16001.
+-- This build is carried to Conquest of Azeroth, a 3.3.5a client (Interface
+-- 30300) that reports `enUS` while its readers read Chinese, so there the
+-- diary opens in its Chinese words; a reader who wants English chooses it.
+-- The interface the client reports is what tells those two apart, and it
+-- keeps a client the diary was written for reading its own language.
 --
 -- The words are taken as each file loads, so the choice has to be known
 -- here, before any of them: the TOC asks for the saved variables first
@@ -42,6 +49,8 @@ local addonName, ns = ...
 -- settings are in) and the settings page says so.
 --
 --   Locale.client     the client's language
+--   Locale.default    the language read when none was chosen: this port's
+--                     on the client it is carried to, else the client's
 --   Locale.id         the language the diary reads
 --   Locale.offered    the languages there are words for, { id, name }, as
 --                     each locale's Grammar.lua offers itself (Locale.Offer)
@@ -55,9 +64,24 @@ local function Chosen()
 end
 
 local client = (GetLocale and GetLocale()) or "enUS"
+
+-- The language read when nobody chose one ("auto", or no saved setting):
+-- this port's on a 3.3.5a client (a WotLK interface, 30300), the client's
+-- own on the retail one the diary was written for. Read from the interface
+-- the client reports, not from its locale, which says `enUS` on both, and
+-- from the interface rather than from a build name, which the retail client
+-- numbers on a line of its own ("1.60.1").
+local DEFAULT, WOTLK, WOTLK_AFTER = "zhCN", 30000, 40000
+local function Default()
+    local build = GetBuildInfo and select(4, GetBuildInfo())
+    if type(build) == "number" and build >= WOTLK and build < WOTLK_AFTER then return DEFAULT end
+    return client
+end
+
 local Locale = {
     client = client,
-    id = Chosen() or client,
+    default = Default(),
+    id = Chosen() or Default(),
     grammar = {},
     offered = { { id = "enUS", name = "English" } },
     stuck = false,
@@ -123,9 +147,10 @@ function Locale.Offers(id)
     return false
 end
 
--- The language a `language` setting asks for ("auto" is the client's).
+-- The language a `language` setting asks for ("auto", or no setting at all,
+-- is Locale.default: the language the diary reads when nobody chose one).
 function Locale.Wanted(language)
-    if type(language) ~= "string" or language == "auto" then return Locale.client end
+    if type(language) ~= "string" or language == "auto" then return Locale.default end
     return language
 end
 
@@ -372,8 +397,21 @@ Locale.grammar.ZONES, Locale.grammar.DUNGEONS, Locale.grammar.SUBZONES = {}, {},
 
 local ENGLISH_PLACE = Locale.grammar.PLACE
 
+-- What to show for a place. The client here is enUS even when the diary
+-- reads Chinese, so GetRealZoneText and the map tree hand back English
+-- (Stormwind City, Ragefire Chasm): on zhCN the port's name table
+-- (Locales/zhCN/Names.lua) turns them over **as the phrase is built**.
+-- The row still keeps the client's name -- only what is shown changes,
+-- so a diary written in English reads back fine in Chinese.
+local function Shown(name)
+    local names = Locale.id == "zhCN" and Locale.CoA
+    if names and names.zhName then return names.zhName(name) end
+    return name
+end
+
 local function Phrase(own, id, name, role)
     role = role or "in"
+    name = Shown(name)
     local words = id and own[id]
     local own = words and words[role]
     if type(own) == "function" then return (Spaces(own(name or ""))) end
@@ -396,7 +434,14 @@ end
 -- locale whose every name takes its own (French "à Hurlevent et à
 -- Orgrimmar", a Russian case per name) sets grammar.EACH_PLACE.
 function ns.ZonesIn(names, role, join)
-    if not Locale.grammar.EACH_PLACE then return ns.ZoneIn(nil, join(names), role) end
+    if not Locale.grammar.EACH_PLACE then
+        -- One preposition, so the names are joined before the phrase is
+        -- built: they are turned over one by one here (Shown), because the
+        -- joined line is not a name any table knows.
+        local shown = {}
+        for i, name in ipairs(names) do shown[i] = Shown(name) end
+        return ns.ZoneIn(nil, join(shown), role)
+    end
     local phrases = {}
     for i, name in ipairs(names) do phrases[i] = ns.ZoneIn(nil, name, role) end
     return join(phrases)

@@ -126,7 +126,7 @@ Text.RUN = {
 -- The title's tooltip, TLN-12's line: "Razorfen Kraul, 35 min, 4 of 6
 -- bosses, 6 deaths, with Brom, Kaelith and Zuri".
 function Text.RunTip(visit, seconds, k, m, deaths, names)
-    local parts = { visit.name or L["A dungeon"], ns.UI.Format.Duration(seconds) }
+    local parts = { ns.UI.Format.VisitName(visit) or L["A dungeon"], ns.UI.Format.Duration(seconds) }
     if m then parts[#parts + 1] = Fmt(L["%1$d of %2$d bosses"], k, m) end
     if deaths > 0 then parts[#parts + 1] = ns.Plural(deaths, L["%d death|%d deaths##plural"]) end
     local line = parts[1]

@@ -12,6 +12,11 @@ local Hunter = ns.Hunter
 -- Pet and Revive Pet fire behind the scenes.
 Hunter.TAME_BEAST = { [1515] = true }
 
+-- CoA, 19 Nov 2026: the spell is spell 1515 "Tame Beast" in the client's own
+-- spell table too — SPELLFAMILY_HUNTER, a 20 s channel, target BEAST,
+-- baseLevel 10 — and a hunter is class token "HUNTER" there as well
+-- (ChrClasses 3). Nothing to change for the port.
+
 -- How long a cast of Tame Beast waits for its pet: the channel (20 s) and
 -- some to spare for a laggy server.
 Hunter.ARMED = 30

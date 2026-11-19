@@ -321,3 +321,51 @@ Press("PAD1")
 Eq(ns.Setting("showUpdateHint"), not before, "A did not switch it")
 Press("PAD1")
 Eq(ns.Setting("showUpdateHint"), before, "A again did not switch it back")
+
+--------------------------------------------------------------------------
+Section("the changelog's Chinese, when there is none")
+
+-- UI/Settings/Sections/Changelog.lua shows the data through
+-- ns.Locale.ChangelogZh(version, index, fallback): index is the entry's
+-- place on the page (entry and sub-entry each take one, 1 up), a release's
+-- summary is 0. No helper, an error, or a non-string means the English
+-- stands; the data itself (Core/ChangelogData.lua) is never translated.
+
+-- The numbers are the page's display order: a summary 0, then each entry
+-- and its sub-entries in the order they are drawn (Deeper is 3, after the
+-- entry it hangs under).
+local releases = {
+    { version = "9.9.9", summary = "A summary",
+      groups = {
+          { heading = "Fixes", entries = {
+              { text = "Fixed it" },
+              { text = "Also fixed", sub = { { text = "Deeper" } } },
+          } },
+      } },
+}
+local function changelogWords()
+    local t = {}
+    for _, line in ipairs(SettingsUI.ChangelogLines(releases)) do
+        if line.text then t[#t + 1] = line.text end
+    end
+    return table.concat(t, "|")
+end
+
+local english = changelogWords()
+Check(english:find("Fixed it", 1, true) ~= nil, "the entry text is not the English one")
+Check(english:find("Deeper", 1, true) ~= nil, "the sub-entry is not the English one")
+
+local saved = ns.Locale and ns.Locale.ChangelogZh
+if ns.Locale then ns.Locale.ChangelogZh = function() error("boom") end end
+Eq(changelogWords(), english, "a broken helper changed the page")
+
+if ns.Locale then
+    ns.Locale.ChangelogZh = function(version, index, fallback)
+        return version .. "#" .. index .. " " .. fallback
+    end
+end
+local zh = changelogWords()
+Check(zh:find("9.9.9#0 A summary", 1, true) ~= nil, "the summary is not looked up as 0")
+Check(zh:find("9.9.9#3 Deeper", 1, true) ~= nil, "the sub-entry is not looked up as 3")
+if ns.Locale then ns.Locale.ChangelogZh = saved end
+

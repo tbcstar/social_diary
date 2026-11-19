@@ -280,17 +280,11 @@ Eq(R.MainActivity(Of(j, "stop")[1]), "fighting", "the stop's main activity")
 --------------------------------------------------------------------------
 Section("the zone map: sub-maps moved onto it, the rest skipped (JRN-5)")
 
+-- 3.3.5 has no world-space projection (C_Map.GetWorldPosFromMapPos is
+-- retail), so a sub-map pointer cannot be moved onto the zone map at all:
+-- the point is skipped, never stored as zone coordinates.
 mock.mapID, mock.position = CAVE, { x = 0.5, y = 0.5 }
-local zone, zx, zy = ns.ZoneWhere()
-Eq(zone, MULGORE, "the cave's zone")
-Eq(zx, J.Round(1100 / 5000), "the cave's x on Mulgore's map")
-Eq(zy, J.Round(1075 / 3333), "the cave's y on Mulgore's map")
--- Without a way through world space, the point is skipped, never stored
--- as zone coordinates.
-local rect = mock.mapRects[CAVE]
-mock.mapRects[CAVE] = nil
-Eq(ns.ZoneWhere(), nil, "an unprojectable sub-map position was kept")
-mock.mapRects[CAVE] = rect
+Eq(ns.ZoneWhere(), nil, "a sub-map point was kept without world coordinates")
 -- No zone above (the Deeprun Tram's map is no map at all), and continents.
 mock.mapID = 9999
 Eq(ns.ZoneWhere(), nil, "a map the client cannot describe gave a point")
@@ -301,10 +295,11 @@ mock.mapID, mock.position = MULGORE, { x = 1.004, y = -0.002 }
 zone, zx, zy = ns.ZoneWhere()
 Eq(zx, 1, "past the right edge not clamped")
 Eq(zy, 0, "past the top edge not clamped")
-mock.position = mock.secret({ x = 0.5, y = 0.5 })
-Eq(ns.ZoneWhere(), nil, "a secret position gave a point")
-mock.position = { x = mock.secret(0.5), y = 0.5 }
-Eq(ns.ZoneWhere(), nil, "a secret coordinate gave a point")
+-- No restricted values on 3.3.5, so the guard that survives is shape: a
+-- position the client cannot read as numbers gives no point.
+mock.position = { x = "0.5", y = 0.5 }
+Eq(ns.ZoneWhere(), nil, "a position that is not numbers gave a point")
+mock.position = { x = 0.5, y = 0.5 }
 mock.inInstance = true
 mock.position = { x = 0.5, y = 0.5 }
 Eq(ns.ZoneWhere(), nil, "an instance gave a zone point")
@@ -319,13 +314,16 @@ Section("capture on the client: the tick (JRN-1, JRN-2)")
 
 mock.SetUnit("player", F.Like(SELF, { level = 10 }))
 local Tick = ns._test.JourneyTick
--- Stand at yards wx, wy in Mulgore: the map and the world agree.
+local status = ns.JourneyCapture.status
+-- Stand at yards wx, wy in Mulgore. The 3.3.5 client hands out the zone
+-- map's fraction and nothing else -- no UnitPosition, so no world yards
+-- (PORT.md §5), which is why no breadcrumb, road or stop can be built.
 local function At(wx, wy, map)
     map = map or MULGORE
     local r = RECT[map]
-    mock.mapID = map
-    mock.position = { x = (wx - r[1]) / r[3], y = (wy - r[2]) / r[4] }
-    mock.world = { x = wx, y = wy, inst = 1 }
+    -- A move changes the area id, and the client announces that: the
+    -- Compat map cache drops on the zone events, as it does in game.
+    mock.MoveTo(map, { x = (wx - r[1]) / r[3], y = (wy - r[2]) / r[4] })
 end
 local function Step(seconds)
     mock.now = mock.now + (seconds or 5)
@@ -345,34 +343,45 @@ for i = 1, 20 do
     At(1000 + i * 35, 1000)
     Step()
 end
-Check(mine.open and mine.open.road, "walking built no road")
+-- The route exists and is open, and nothing is drawn on it: without a
+-- world position there is no distance to thin the breadcrumbs by, so
+-- Feed() never runs (the drawing chain is metres of dead geometry).
+Check(mine.open and not mine.open.road, "walking built a road without world coordinates")
+Eq(Kinds(mine, "road"), 0, "a road was drawn without world coordinates")
+Eq(Kinds(mine, "stop"), 0, "a stop was drawn without world coordinates")
+Eq(status.skip, "no world position (UnitPosition)", "the reason the tick took no sample")
 
--- Inn names and an empty zone text never key anything: the map decides.
-mock.zone = "Lakeshire Inn"
-for i = 21, 30 do
-    At(1000 + i * 35, 1000)
-    Step()
-end
-mock.zone = ""
-for i = 31, 40 do
-    At(1000 + i * 35, 1000)
-    Step()
-end
-mock.zone = "Mulgore"
-J.Settle(mine)
-for _, seg in ipairs(J.Segments(mine)) do Eq(seg.mapID, MULGORE, "a segment keyed by the zone text") end
-Eq(Kinds(mine, "road"), 1, "the zone text split the road")
+-- What still records is recorded on the zone map: a level-up, a dungeon,
+-- a fight (see /sd journey stats for the skip reason above).
+mock.SetUnit("player", F.Like(SELF, { level = 11 }))
+mock.subZone = "The Crossroads"
+mock.fire("PLAYER_LEVEL_UP", 11)
+local lvl = mine.levels[11]
+Check(lvl ~= nil, "the level-up was not recorded")
+Eq(lvl.mapID, MULGORE, "where the level was reached")
+Eq(lvl.x, J.Round(1700 / 5000), "the level-up's x on the zone map")
+Eq(lvl.y, J.Round(1000 / 3333), "the level-up's y on the zone map")
+Eq(lvl.subZone, "The Crossroads", "the subzone of the level-up")
+mock.subZone = ""
 
--- A secret or missing position is a pause: nothing stored, nothing joined.
+-- A fight is placed on the zone map too, with no world position: Spot()
+-- asks the client for the zone fraction the recap draws on.
+At(3000, 1000)
+local mark = J.Fight(mine, "won", nil, mock.now, J.Spot())
+Check(mark ~= nil, "a fight made no mark")
+Eq(mark.mapID, MULGORE, "the fight's map")
+Eq(mark.x, J.Round(3000 / 5000), "the fight's x on the zone map")
+Eq(mark.y, J.Round(1000 / 3333), "the fight's y on the zone map")
+
+-- A missing position is a pause: nothing stored, nothing joined.
 local count = #mine.segments
-mock.world = { x = mock.secret(5), y = 5, inst = 1 }
-Step()
-mock.world = nil
-Step()
 mock.position = nil
 Step()
 Eq(#mine.segments, count, "an unreadable position stored something")
 Eq(mine.open.prev, nil, "an unreadable position left the road open")
+-- A client with no position still answers the map fraction 0,0 -- the
+-- zone reads, and it is the world position that is missing.
+Eq(status.skip, "no world position (UnitPosition)", "the reason a missing position gives")
 
 -- No position is read in combat.
 At(3000, 1000)
@@ -387,39 +396,16 @@ ns.ZoneWhere = where
 mock.inCombat = false
 Eq(reads, 0, "the position was read in combat")
 
--- A duel's fight is no fighting on the route: its result comes before
--- combat ends (SD_DUEL_FINISHED), and its time is not kept. The next
--- fight's is.
-do
-    local function Fought()
-        local o = mine.open
-        local into = o.dungeon or o.c or o.road
-        return (into and into.act and into.act.combat or 0) + (o.loose and o.loose.combat or 0)
-    end
-    local before = Fought()
-    mock.fire("PLAYER_REGEN_DISABLED")
-    mock.now = mock.now + 30
-    ns.Fire("SD_DUEL_FINISHED", F.STRANGER.guid, "lost")
-    mock.fire("PLAYER_REGEN_ENABLED")
-    Eq(Fought(), before, "a duel's fight kept as fighting")
-    mock.fire("PLAYER_REGEN_DISABLED")
-    mock.now = mock.now + 20
-    mock.fire("PLAYER_REGEN_ENABLED")
-    Eq(Fought(), before + 20, "the fight after a duel not kept")
-    -- Fleeing, combat can end long before the "fled" line (probe, 15 Oct:
-    -- 18 s): a fight that ends while a duel is on is the duel's.
-    ns.Fire("SD_DUEL_STARTED", F.STRANGER.guid)
-    mock.fire("PLAYER_REGEN_DISABLED")
-    mock.now = mock.now + 10
-    mock.fire("PLAYER_REGEN_ENABLED")
-    mock.now = mock.now + 18
-    ns.Fire("SD_DUEL_FINISHED", F.STRANGER.guid, "fled")
-    Eq(Fought(), before + 20, "a fight in a duel not yet over kept as fighting")
-    mock.fire("PLAYER_REGEN_DISABLED")
-    mock.now = mock.now + 5
-    mock.fire("PLAYER_REGEN_ENABLED")
-    Eq(Fought(), before + 25, "the fight after a flight not kept")
-end
+-- The duel rule (a duel's fight is no fighting on the route, and a fight
+-- that ends while a duel is on is the duel's) lives beside the breed
+-- switches in Core/Journey.lua's Act(). It was asserted here by reading
+-- combat seconds off the open road/stop segment; on 3.3.5 no segment is
+-- ever built (see this section above), and ns.Act() writes the same
+-- switches into open.loose without a segment. What verifies it now: the
+-- switch bookkeeping in tests/journey.lua's synthetic Feed sections
+-- (J.Feed + Act over a route the test builds by hand), which run on both
+-- clients; the capture-time ordering (SD_DUEL_FINISHED before
+-- PLAYER_REGEN_ENABLED) is covered by tests/duels.lua.
 
 -- AFK is a pause.
 mock.afk = true
@@ -430,35 +416,34 @@ mock.afk = false
 --------------------------------------------------------------------------
 Section("taxis are flights, never mounted travel (JRN-9)")
 
+-- A flight is drawn as a segment between the last sample before take-off
+-- and the first one after landing (Journey/TakeOff, Land). On 3.3.5 no
+-- sample is ever taken, so no flight is drawn and TakeOff/Land are never
+-- reached; the mounted travel that used to split the road is a pause.
 for i = 1, 5 do
     At(2000 + i * 30, 2000)
     Step()
 end
-local takeOff = mock.now
 mock.onTaxi = true
 for i = 1, 30 do
     At(2200 + i * 150, 2000 + i * 20)  -- flying, fast
     Step()
 end
+Eq(status.skip, "on a taxi", "the reason a flight gave no sample")
 mock.onTaxi = false
 At(6500, 2600, BARRENS)
 Step()
-local flights = Of(mine, "flight")
-Eq(#flights, 1, "the taxi was not one flight")
-local flight = flights[1]
-Eq(flight.mapID1, MULGORE, "take-off zone")
-Eq(flight.mapID2, BARRENS, "landing zone")
-Eq(flight.x1, J.Round(2150 / 5000), "take-off spot: the last one before")
-Eq(flight.x2, J.Round(1500 / 6000), "landing spot: the first one after")
-for _, seg in ipairs(J.Segments(mine)) do
-    if seg.kind == "road" or seg.kind == "stop" then
-        Check(seg.to <= takeOff + 5 or seg.from >= flight.to, "the flight left a road or a stop")
-    end
-end
+Eq(Kinds(mine, "flight"), 0, "a flight was drawn without world coordinates")
+Eq(Kinds(mine, "road"), 0, "a taxi left a road")
 
 --------------------------------------------------------------------------
-Section("dungeons: the entry spot, fresh or nothing; corpse runs (JRN-8)")
+Section("dungeons: a visit from the instance alone; corpse runs (JRN-8)")
 
+-- The visit is opened by the tick's GetInstanceInfo branch, which needs no
+-- sample. The entry spot is pinned from the last outdoor *displayed map*
+-- sample (Journey.InDungeon reads o.seen) -- and on 3.3.5 no sample is
+-- ever taken, so the visit has no entry spot. It still has a name, an
+-- instance id, its seconds and its corpse run.
 for i = 1, 4 do
     At(6500 + i * 30, 2600, BARRENS)
     Step()
@@ -468,8 +453,9 @@ Step(20)
 Step()
 local d = mine.open.dungeon
 Check(d ~= nil, "entering did not open a dungeon")
-Eq(d.mapID, BARRENS, "the dungeon's zone")
-Eq(d.x, J.Round(1620 / 6000), "the entry spot is not the last outdoor one")
+Eq(d.mapID, nil, "a dungeon placed in a zone with no world position")
+Eq(d.x, nil, "an entry spot pinned without a world position")
+Eq(d.y, nil, "an entry y pinned without a world position")
 -- Died inside, released, ran back as a ghost: still the same visit.
 mock.inInstance, mock.ghost = false, true
 At(6000, 2000, BARRENS)
@@ -487,19 +473,16 @@ Step()
 Eq(mine.open.dungeon, nil, "leaving alive did not end the dungeon")
 Eq(Kinds(mine, "dungeon"), 1, "the corpse run made two dungeons")
 Eq(inside, 10, "the dungeon's time inside, the corpse run left out")
-for _, seg in ipairs(J.Segments(mine)) do
-    if seg.kind == "road" or seg.kind == "stop" then
-        Check(seg.to < d.from or seg.from > d.from, "the ghost run left a road")
-    end
-end
 
--- Summoned in, or ported: the last outdoor spot is too old to be the door.
+-- Summoned in, or ported: the door is where the player stood, and that
+-- spot is either too old or (here) never pinned at all.
 mock.now = mock.now + 120
 Tick()
 mock.inInstance, mock.instanceName, mock.instanceID = true, "Ragefire Chasm", 389
 mock.now = mock.now + 90
 Tick()
-Eq(mine.open.dungeon and mine.open.dungeon.x, nil, "a stale spot became the entry")
+Check(mine.open.dungeon ~= nil, "the second dungeon did not open")
+Eq(mine.open.dungeon.x, nil, "a stale spot became the entry")
 mock.inInstance = false
 At(6600, 2600, BARRENS)
 Step()
@@ -530,22 +513,28 @@ for i = 1, 6 do
     Step()
 end
 J.Settle(mine)
-Eq(J.Segments(mine)[#mine.segments].levelTo, 11, "the segment's levelTo not marked")
+Eq(#mine.segments, 2, "the only segments are the two dungeons")
+Eq(Kinds(mine, "road") + Kinds(mine, "stop"), 0, "a level-up drew a road or a stop without world coordinates")
 Eq(J.MaxLevel(), 60, "the maximum level is not the client's")
 mock.maxLevel = 70
 Eq(J.MaxLevel(), 70, "the maximum level is hard-coded")
 mock.maxLevel = 60
 
 --------------------------------------------------------------------------
-Section("/reload keeps the open segment (JRN-20)")
+Section("/reload keeps the route (JRN-20)")
 
+-- Nothing is drawn without a world position, so a reload has nothing to
+-- keep open: what it must keep is the route record itself -- the begin
+-- level and map, the level-ups, the open mark -- and it must not invent
+-- a segment when the timer starts again.
 for i = 1, 45 do
     At(8000 + (i % 2) * 10, 2000, BARRENS)
     Step()
 end
-Check(mine.open.c and mine.open.c.stop, "setup: a stop is open")
-local opened = mine.open.c.since
+Eq(Kinds(mine, "road") + Kinds(mine, "stop"), 0, "setup: a road or stop was drawn without world coordinates")
 local segs = #mine.segments
+local levels = 0
+for _ in pairs(mine.levels) do levels = levels + 1 end
 -- A /reload: a fresh copy of the addon on the same saved table.
 local saved, savedChar, now = _G.SocialDiaryDB, _G.SocialDiaryCharDB, mock.now
 mock.Reset()
@@ -557,18 +546,23 @@ mock.SetUnit("player", F.Like(SELF, { level = 11 }))
 _G.IsMounted = nil
 Tick = ns._test.JourneyTick
 mine = ns.db.journey[SELF.guid]
+Check(mine ~= nil, "the reload lost the route")
+Eq(#mine.segments, segs, "the reload drew a segment")
+local after = 0
+for _ in pairs(mine.levels) do after = after + 1 end
+Eq(after, levels, "the reload lost a level")
+Check(mine.levels[11] ~= nil, "the reload lost the level-up of the capture")
 for _ = 1, 10 do
     At(8005, 2000, BARRENS)
     Step()
 end
-Eq(#mine.segments, segs, "the reload closed the open stop")
-Eq(mine.open.c.since, opened, "the reload began a new stop")
--- Back after the gap: it is settled at its last sample.
+Eq(#mine.segments, segs, "a tick after the reload drew a segment")
+-- Back after the gap: still nothing to settle, and no error.
 mock.now = mock.now + 300
 At(8005, 2000, BARRENS)
 Tick()
-Eq(#mine.segments, segs + 1, "a long gap did not settle the open stop")
-Eq(J.Segments(mine)[#mine.segments].kind, "stop", "the settled segment")
+Eq(#mine.segments, segs, "a long gap settled a stop that never opened")
+Eq(status.skip, "no world position (UnitPosition)", "the skip reason after the reload")
 
 --------------------------------------------------------------------------
 Section("the setting: off keeps nothing new (JRN-17)")
@@ -595,8 +589,11 @@ Eq(ns.JourneyCapture.Running(), true, "the timer did not start again")
 Eq(mock.tickers[#mock.tickers].interval, TUNE.tick, "the timer's beat")
 
 --------------------------------------------------------------------------
-Section("the raw buffer: only with debug on, and it wraps (JRN-18)")
+Section("the raw buffer: only with debug on (JRN-18)")
 
+-- The buffer is fed by Feed(), which needs a world position: on 3.3.5 a
+-- debug route stays empty, and the setting only controls what would be
+-- kept (the wrap itself is covered by the synthetic Feed sections below).
 ns.db.settings.debug = false
 At(9000, 2000, BARRENS)
 Step()
@@ -609,14 +606,8 @@ for i = 1, 12 do
 end
 local n2, size = J.RawCount()
 Eq(size, 5, "the buffer's size")
-Eq(n2, 5, "the buffer grew past its size")
-local stored = 0
-for k in pairs(ns.db.journeyRaw) do
-    if type(k) == "number" then stored = stored + 1 end
-end
-Eq(stored, 5, "the buffer holds more points than its size")
-Eq(ns.db.journeyRaw.at, 12 % 5, "the index did not wrap")
-Check(ns.db.journeyRaw[2]:find(tostring(mock.now)), "the newest point is not where the index says")
+Eq(n2, 0, "raw points written without a world position")
+Eq(ns.db.journeyRaw.at, nil, "an index was kept without points")
 Eq(J.T.raw, 5000, "the default size")
 ns.db.settings.debug = false
 J.ClearRaw()
@@ -926,7 +917,19 @@ local n2 = ns.Notes.Add(TESTER, "In the cave.", { time = t + 2000, where = { map
 sheet = R.SheetFor(SELF.guid, MULGORE)
 local mn1, mn2 = Meeting("note", "note", n1), Meeting("note", "note", n2)
 Eq(mn1 and mn1.x, 0.7, "a note on the zone map is placed by its own position")
-Check(mn2 ~= nil and mn2.x ~= 0.5, "a note on a sub-map is placed by time, not its own coordinates")
+-- 3.3.5 has no parent links between maps (Core/Compat/Map.lua: "a map's
+-- parent is unknown rather than guessed from its continent"), so a note
+-- written on a cave's own map cannot be moved onto Mulgore's sheet by
+-- time: it is not placed there at all. It is still placed on the cave's
+-- own sheet, by the position it was written at -- that is the equivalent
+-- verification of "a note is placed where it was written".
+Eq(mn2, nil, "a note on a sub-map was placed on the zone's sheet without a parent link")
+local cave = R.SheetFor(SELF.guid, CAVE)
+local onCave
+for _, m in ipairs(cave.meetings) do
+    if m.kind == "note" and m.note == n2 then onCave = m end
+end
+Check(onCave ~= nil and onCave.x == 0.5, "a note on a sub-map is not placed on the sub-map's own sheet")
 
 --------------------------------------------------------------------------
 Section("fights: a stranger's name does not outlive the buffer (JRN-10)")
@@ -940,7 +943,8 @@ local row = ns.WorldPvP.Kill(STRANGER)
 local mark = mine.marks[#mine.marks]
 Check(mark ~= nil and mark.outcome == "won", "the kill left no mark")
 Eq(mark.guid, nil, "a stranger's GUID kept on the mark")
-Eq(mark.mapID, MULGORE, "the fight's zone")
+local wdbg = ns.Where()
+Eq(mark.mapID, MULGORE, "the fight's zone (where.mapID=" .. tostring(wdbg.mapID) .. ", x=" .. tostring(wdbg.x) .. ", zoneOf=" .. tostring(wdbg.mapID and ns.ZoneOf(wdbg.mapID)) .. ")")
 Eq(mark.t, row.time, "the mark's time is the row's")
 local index = J.FightIndex()
 Eq(Text.Fight(mark, index), "beat Tullus Hostilius", "a stranger named while the buffer has them")
@@ -1286,6 +1290,7 @@ Section("a new character's road shows before anything closes")
 local NEWBIE = F.Like(SELF, { guid = "Player-4707-0NEWB001", name = { "Masolimtaurn Skychaser" }, level = 1 })
 mock.SetUnit("player", NEWBIE)
 ns.ownGUID = NEWBIE.guid
+-- No road is drawn on this client, but a level reached is still kept.
 for i = 1, 12 do
     At(2000 + i * 30, 1500)
     Step()
@@ -1295,16 +1300,19 @@ mock.fire("PLAYER_LEVEL_UP", 2)
 At(2400, 1500)
 Step()
 local newbie = ns.db.journey[NEWBIE.guid]
-Eq(#newbie.segments, 0, "setup: nothing closed yet")
-Check(J.Any(newbie), "an open road and a level reached count as nothing kept")
+Eq(#newbie.segments, 0, "a road was drawn without world coordinates")
+Check(J.Any(newbie), "a level reached counts as nothing kept")
+Check(newbie.levels[2] ~= nil, "the first level-up was not kept")
+Eq(newbie.levels[2].mapID, MULGORE, "the first level-up's zone")
 
 local fresh = R.For(NEWBIE.guid)
-Eq(#fresh.entries, 2, "levels 1 and 2 have their entries")
-Check(fresh.entries[1].seconds >= 50, "the open road's time is not in level 1: " .. fresh.entries[1].seconds)
-Eq(fresh.entries[1].places[1] and fresh.entries[1].places[1].mapID, MULGORE, "the open road's zone")
-Eq(#fresh.zones, 1, "the open road's zone is not in the index")
-Check(#R.SheetFor(NEWBIE.guid, MULGORE).roads == 1, "the open road is not on the sheet")
-Eq(#newbie.segments, 0, "reading the open road saved it")
+-- Level 1 kept nothing (no road on this client), so it has no entry;
+-- the level being played is the one entry, which is what leaves the page
+-- with something to print.
+Eq(#fresh.entries, 1, "the entries are the levels with kept activity")
+Eq(fresh.entries[1].level, 2, "the entry is the level being played")
+Check(#R.SheetFor(NEWBIE.guid, MULGORE).roads == 0, "a road on a sheet without world coordinates")
+Eq(#newbie.segments, 0, "reading the level saved a segment")
 
 ns.UI.ShowJournal()
 ns.UI.SetJournalView("journey")
@@ -1425,8 +1433,11 @@ Section("an error in a tick does not stop the timer")
 ns.JourneyCapture.SetEnabled(false)
 ns.JourneyCapture.SetEnabled(true)
 local timer = mock.tickers[#mock.tickers]
-local feed, broken = J.Feed, true
-J.Feed = function(...) if broken then error("boom") end return feed(...) end
+-- On 3.3.5 the tick never reaches Feed() (no world position), so the
+-- error is raised from the first thing it does read: the zone where it
+-- stands. Same protection: the tick is pcall'd and the failure counted.
+local zoneWhere, broken = ns.ZoneWhere, true
+ns.ZoneWhere = function(...) if broken then error("boom") end return zoneWhere(...) end
 _G.geterrorhandler = function() return function() end end
 local status = ns.JourneyCapture.status
 local errorsBefore = status.errors
@@ -1440,8 +1451,8 @@ local ticksBefore = status.ticks
 mock.now = mock.now + 5
 timer.fn()
 Eq(status.ticks, ticksBefore + 1, "the next tick did not run")
-Eq(status.skip, nil, "the next tick took no sample")
-J.Feed = feed
+Eq(status.skip, "no world position (UnitPosition)", "the next tick took no sample")
+ns.ZoneWhere = zoneWhere
 _G.geterrorhandler = nil
 ns.db.settings.debug = true
 SlashCmdList.SOCIALDIARY("journey stats")
@@ -1546,57 +1557,16 @@ local sdx = J.Shape({ w = 4, zx = 2, zy = 2, zxx = 1.04, zyy = 1, zxy = 1 })
 Check(sdx and math.abs(sdx - 0.1) < 1e-9, "a sound shape was lost")
 
 --------------------------------------------------------------------------
-Section("how many yards a zone spans: ordered by its art, guarded (JRN-14)")
+Section("how many yards a zone spans: none, without a world (JRN-14)")
 
--- The mock's client answers GetMapWorldSize: Mulgore 5000 by 3333.
+-- The 3.3.5 client has no C_Map.GetMapWorldSize and no world-vector
+-- projection: Compat fills both members with a nil answer (PORT.md §5),
+-- so MapYards has nothing to measure with and the sheet draws to scale.
 local w, h = J.MapYards(MULGORE)
-Eq(w, 5000, "Mulgore's width in yards")
-Eq(h, 3333, "Mulgore's height in yards")
-
--- Without it, the corners: the world vector runs (north, west), so the
--- first axis is the map's height. Ordered back by the art.
-local worldSize = C_Map.GetMapWorldSize
-C_Map.GetMapWorldSize = nil
-local _, corner = C_Map.GetWorldPosFromMapPos(MULGORE, CreateVector2D(0, 0))
-local _, far = C_Map.GetWorldPosFromMapPos(MULGORE, CreateVector2D(1, 1))
-local cx, cy = corner:GetXY()
-local fx, fy = far:GetXY()
-Eq(math.abs(fx - cx), 3333, "the mock's world vector is not (north, west)")
-Eq(math.abs(fy - cy), 5000, "the mock's world vector is not (north, west)")
-w, h = J.MapYards(MULGORE)
-Eq(w, 5000, "the corners gave the height as the width")
-Eq(h, 3333, "the corners gave the width as the height")
-
--- A map without art takes the client's own order.
-mock.mapRects[7001] = { 0, 0, 2400, 1800 }
-w, h = J.MapYards(7001)
-Eq(w, 2400, "without art, the corners are not read (north, west)")
-Eq(h, 1800, "without art, the corners are not read (north, west)")
-
--- Out of range, or the wrong shape for the art: nil, and the sheet guesses.
-mock.mapRects[7001] = { 0, 0, 120, 90 }
-Eq(J.MapYards(7001), nil, "a zone a hundred yards across was believed")
-mock.mapRects[7001] = { 0, 0, 90000, 60000 }
-Eq(J.MapYards(7001), nil, "a zone ninety thousand yards across was believed")
-mock.mapArt[7001] = true
-mock.mapRects[7001] = { 0, 0, 3000, 3000 }
-Eq(J.MapYards(7001), nil, "a square in world space was taken for a 3:2 map")
-mock.mapRects[7001], mock.mapArt[7001] = nil, nil
+Eq(w, nil, "a zone measured on a client without world coordinates")
+Eq(h, nil, "a zone height measured without world coordinates")
 Eq(J.MapYards(7001), nil, "a map the client cannot place has yards")
-C_Map.GetMapWorldSize = worldSize
-
--- The client's own figure is ordered and guarded too.
-local swapped = C_Map.GetMapWorldSize
-C_Map.GetMapWorldSize = function(mapID)
-    local a, b = swapped(mapID)
-    return b, a
-end
-w, h = J.MapYards(MULGORE)
-Eq(w, 5000, "a world size given down-first was not put back in order")
-C_Map.GetMapWorldSize = function() return 0, 0 end
-w = J.MapYards(MULGORE)
-Eq(w, 5000, "a world size of nothing did not fall back to the corners")
-C_Map.GetMapWorldSize = swapped
+Eq(J.MapYards(), nil, "no map has yards")
 
 --------------------------------------------------------------------------
 Section("a ghost's walk is not the road")
@@ -1605,14 +1575,14 @@ ns.ownGUID = SELF.guid
 mock.SetUnit("player", F.Like(SELF, { level = 11 }))
 mock.ghost, mock.dead, mock.inInstance = false, false, false
 local ghostRoute = ns.db.journey[SELF.guid]
+local before = #ghostRoute.segments
 for i = 1, 10 do
     At(3000 + i * 35, 2500)
     Step()
 end
-J.Act(ghostRoute, "deaths", 1)
-local died = mock.now
 mock.dead = true
 Step()
+Eq(status.skip, "dead or a ghost", "the tick sampled while dead")
 Step()
 mock.dead, mock.ghost = false, true
 -- Released at the graveyard, running back across the map.
@@ -1620,27 +1590,19 @@ for i = 1, 20 do
     At(4000 - i * 35, 1500)
     Step()
 end
+Eq(status.skip, "dead or a ghost", "the tick sampled on the corpse run")
 mock.ghost = false
-local alive = mock.now
 for i = 1, 10 do
     At(3300 + i * 35, 2500)
     Step()
 end
 J.Settle(ghostRoute)
-for _, seg in ipairs(J.Segments(ghostRoute)) do
-    if seg.from > died and seg.from < alive then
-        Check(seg.kind ~= "road", "the ghost's walk was penned as a road")
-    end
-    if seg.kind == "road" then
-        Check(seg.to <= died + 10 or seg.from >= alive, "a road spans the time as a ghost")
-    end
-end
-local deathMarked = false
-for _, seg in ipairs(J.Segments(ghostRoute)) do
-    if seg.kind == "stop" and seg.act and seg.act.deaths then deathMarked = true end
-end
-Check(deathMarked, "the death was not kept where it happened")
-Eq(ns.JourneyCapture.status.skip, nil, "capture did not take up again once alive")
+-- The walk while dead and while a ghost is a pause, not a road; and
+-- without world coordinates there is no road at all, so the check is
+-- that the pause left the route exactly as it was.
+Eq(#ghostRoute.segments, before, "the ghost's walk was kept as a segment")
+Eq(Kinds(ghostRoute, "road"), 0, "a road spans the time as a ghost")
+Eq(status.skip, "no world position (UnitPosition)", "capture did not take up again once alive")
 
 -- Its own function: the file's main chunk is near Lua's 200 locals.
 local function Hindsight()

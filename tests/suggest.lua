@@ -38,8 +38,11 @@ Eq(english.showSuggestStrip, nil, "a switch for the strip on an English diary")
 Section("a German diary, its hints' record from before 4.0")
 
 mock.Reset()
--- The client's language for the rest of the file, given back at its end
--- (the harness keeps globals between files).
+-- The mock seeds English; on this client an unset language reads Chinese
+-- (Locale.default is zhCN on 3.3.5), so the test says which language the
+-- diary reads. The client's language for the rest of the file, given back
+-- at its end (the harness keeps globals between files).
+_G.SocialDiaryDB = { settings = { language = "deDE" } }
 local clientLocale = _G.GetLocale
 _G.GetLocale = function() return "deDE" end
 ns = T.Load()
@@ -512,6 +515,8 @@ Section("without the folder: the Language page stands, with no switch")
 
 mock.Reset()   -- puts the client's GetLocale back: German again
 _G.GetLocale = function() return "deDE" end
+-- The file's German client, stated again: Reset seeds the suite's English.
+_G.SocialDiaryDB = { settings = { language = "deDE" } }
 ns = T.Load()
 mock.SetUnit("player", T.F.SELF)
 mock.fire("ADDON_LOADED", ns.addonName)

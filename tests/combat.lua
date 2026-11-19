@@ -234,13 +234,15 @@ Eq(#ns.CloseCalls.List(j), 5, "the third fight in the session was not one")
 Eq(ns.CloseCalls.List(j)[5].pct, 7, "the third fight's own damage")
 table.remove(j.closeCalls)
 
--- The meter still secret as combat ends: read again a moment later.
+-- 3.3.5 has no secret values: a number that retail would have withheld
+-- reads like any other, so the metre is read while the fight ends and read
+-- again when it moves (mock.secret is the identity there).
 do
     local id = Fight({ Mob(STRIDER1, "Plainstrider") }, 5, { secret = true })
-    Eq(#ns.CloseCalls.List(j), 4, "a secret was read")
+    Eq(#ns.CloseCalls.List(j), 5, "the metre was read once at the fight's end")
     meter.sessions[id].taken = 95
     mock.RunTimers()
-    Eq(#ns.CloseCalls.List(j), 5, "the meter was not read again")
+    Eq(#ns.CloseCalls.List(j), 5, "no second close call for a metre already read at its end")
     table.remove(j.closeCalls)
 end
 

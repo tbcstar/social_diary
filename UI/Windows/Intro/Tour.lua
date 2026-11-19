@@ -169,7 +169,7 @@ local STEPS = {
         todo = L["Click him to see his page."] },
 }
 local WORDS = {
-    find = { heading = "Your first green!", item = L["Wolfskin Bracers"] },
+    find = { heading = L["Your first green!"], item = L["Wolfskin Bracers"] },
     -- Bram: a stranger who saved you from Hogger with 8% of your health
     -- left. As a witness the player writes in (Core/Custom.lua's moment
     -- "witnessed"), the record the card reads: the deed, who, the creature

@@ -362,7 +362,7 @@ local function Run(art)
     end
 
     local F = dofile(here .. "/fixtures.lua")
-    local ns = mock.LoadAddon(root)
+    local ns = mock.LoadAddon(root, dofile(here .. "/fs.lua").Toc(root))
     mock.SetUnit("player", F.SELF)
 
     -- The Social window, for the side tab: no native tabs of its own.

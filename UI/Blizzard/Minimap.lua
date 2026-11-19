@@ -99,9 +99,11 @@ local function Build()
     button = CreateFrame("Button", "SocialDiaryMinimapButton", Minimap)
     button:SetSize(LOOK.SIZE, LOOK.SIZE)
     button:SetFrameStrata("MEDIUM")
-    button:SetFixedFrameStrata(true)
+    -- Retail pins the strata and level against other addons; 3.3.5a has no
+    -- such calls, so they are tried and skipped (the plain ones still hold).
+    if button.SetFixedFrameStrata then pcall(button.SetFixedFrameStrata, button, true) end
     button:SetFrameLevel(8)
-    button:SetFixedFrameLevel(true)
+    if button.SetFixedFrameLevel then pcall(button.SetFixedFrameLevel, button, true) end
     button:RegisterForClicks("LeftButtonUp", "RightButtonUp")
     button:RegisterForDrag("LeftButton")
 
@@ -123,7 +125,7 @@ local function Build()
     button:SetHighlightTexture(Style.Art("minimapHover"))
 
     Style.Tooltip(button, function()
-        return Style.TipList("Social Diary", {
+        return Style.TipList(L["Social Diary"], {
             L["Click to open or close the journal."],
             L["Right-click to open the settings."],
             L["Drag to move this button."],

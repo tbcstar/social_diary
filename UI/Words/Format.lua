@@ -355,6 +355,17 @@ end
 function Format.ClassName(record)
     local token = record.class
     if not token then return nil end
+    -- CoA has 32 classes and the client's own class name table knows the
+    -- ten it shipped with; Features/CoA.lua knows all of them, in the
+    -- reader's language. Asked when drawn, so the module may load later.
+    local CoA = ns.CoA
+    if CoA and type(CoA.ClassByToken) == "function" then
+        local ok, entry = pcall(CoA.ClassByToken, token)
+        if ok and entry and type(CoA.Name) == "function" then
+            local said, name = pcall(CoA.Name, entry)
+            if said and type(name) == "string" and name ~= "" then return name end
+        end
+    end
     local names = record.sex == 3 and LOCALIZED_CLASS_NAMES_FEMALE or LOCALIZED_CLASS_NAMES_MALE
     if names and names[token] then return names[token] end
     return token:sub(1, 1) .. token:sub(2):lower()
@@ -380,5 +391,39 @@ function Format.WhoLine(record, guild, dropOwn)
     end
 
     if guild then text = text .. "  |cff" .. ns.Style.HEX.faded .. "<" .. guild .. ">|r" end
+    return text
+end
+
+-- A visit's name as the reader should see it: the diary saves the name the
+-- instance had when it was run, and CoA knows its own in the reader's
+-- language (Features/CoA.lua, ns.CoA.Name, looked up here and not saved, so
+-- a later translation shows on old entries too). The lookup is made when the
+-- name is drawn — the module may load after this file — and any failure, or
+-- no module at all, leaves the saved name exactly as it is. Only visits and
+-- places take it: people are named by Format.ClassName and their own record,
+-- and asking the place table about a person would be nonsense.
+function Format.VisitName(visit)
+    if not visit then return nil end
+    local said = ns.CoA and ns.CoA.Name
+    if type(said) == "function" then
+        local ok, text = pcall(said, visit)
+        if ok and type(text) == "string" and text ~= "" then return text end
+    end
+    return visit.name
+end
+
+-- A place name as the reader should see it: zones and dungeons are saved as
+-- the client named them (English here), and the CoA table knows a Chinese
+-- name for the ones the community has settled. Read when drawn, so the
+-- module may load after this file; a lookup that fails, or knows nothing,
+-- leaves the client's name exactly as it is. Never saved: the record keeps
+-- the client's name, so switching language or client cannot split a diary.
+function Format.PlaceName(text)
+    if type(text) ~= "string" or text == "" then return text end
+    local said = ns.CoA and ns.CoA.zhName
+    if type(said) == "function" then
+        local ok, localised = pcall(said, text)
+        if ok and type(localised) == "string" and localised ~= "" then return localised end
+    end
     return text
 end

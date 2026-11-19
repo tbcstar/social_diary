@@ -41,7 +41,9 @@ Eq(addedAgain, false, "adding twice reported itself as new")
 Eq(ns.Diary.Count(), 1, "diary count after a duplicate add")
 
 Eq(ns.Diary.Add("Creature-0-4620-1-6-3098-1", {}), nil, "a creature entered the diary")
-Eq(ns.Diary.Add(mock.secret("Player-1-2"), {}), nil, "a secret GUID entered the diary")
+-- No restricted values on 3.3.5: the surviving guard is the missing GUID, and
+-- a player GUID that reads normally is accepted (see the add above).
+Eq(ns.Diary.Add(nil, {}), nil, "a missing GUID entered the diary")
 
 -- DIA-6: tags.
 Check(ns.Diary.AddTag(GUID, "helper"), "tag not added")
@@ -231,6 +233,9 @@ Eq(ns.Diary.TagLabel("foe"), "foe", "an English preset does not read as itself")
 Eq(ns.Diary.TagLabel("questing buddy"), "questing buddy", "a custom tag does not read as written")
 
 mock.Reset()
+-- The mock seeds English; an unset language reads Chinese on this client
+-- (Locale.default is zhCN on 3.3.5), so the test states the language it reads.
+_G.SocialDiaryDB = { settings = { language = "deDE" } }
 local clientLocale = _G.GetLocale
 _G.GetLocale = function() return "deDE" end
 ns = T.Boot()

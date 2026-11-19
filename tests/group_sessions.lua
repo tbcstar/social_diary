@@ -131,8 +131,10 @@ mock.fire("UNIT_DIED", GUID)
 Eq(s.deaths[GUID], 1, "the participant's death not counted")
 mock.fire("UNIT_DIED", PUG.guid)
 Eq(s.deaths[PUG.guid], nil, "a non-participant's death counted")
+-- 3.3.5 has no restricted values, so this is the same participant dying
+-- again: the GUID reads and the death counts a second time.
 mock.fire("UNIT_DIED", mock.secret(GUID))
-Eq(s.deaths[GUID], 1, "a secret GUID's death counted")
+Eq(s.deaths[GUID], 2, "no restricted values: the second death counts")
 
 mock.SetUnit("party1", F.Like(STRANGER, { level = 5 }))
 mock.fire("UNIT_LEVEL", "party1")

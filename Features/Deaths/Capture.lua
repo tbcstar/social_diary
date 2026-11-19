@@ -227,9 +227,12 @@ end
 -- The recap ID the damage meter keeps for a victim's latest death, if it
 -- lists them. Only read outside combat, where its fields are plain.
 local function MeterRecapID(guid)
+    -- The meter's presence is decided in one place (Features/CloseCalls/
+    -- Kind.lua, ns.HasDamageMeter): CoA has none, so this is nil there.
+    if not ns.HasDamageMeter() then return nil end
     local meter = C_DamageMeter
     local types = Enum and Enum.DamageMeterType
-    if not (meter and meter.GetAvailableCombatSessions and types and types.Deaths) then return nil end
+    if not (meter.GetAvailableCombatSessions and types and types.Deaths) then return nil end
 
     local ok, sessions = pcall(meter.GetAvailableCombatSessions)
     sessions = ok and ns.Plain(sessions)

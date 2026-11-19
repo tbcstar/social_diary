@@ -100,4 +100,33 @@ ns.UI.OnUnitTooltip = OnUnitTooltip
 if TooltipDataProcessor and TooltipDataProcessor.AddTooltipPostCall
     and Enum and Enum.TooltipDataType then
     TooltipDataProcessor.AddTooltipPostCall(Enum.TooltipDataType.Unit, OnUnitTooltip)
+else
+    -- 3.3.5a has no TooltipDataProcessor. Its tooltips call their own
+    -- OnTooltipSetUnit script instead, so the same lines are added there,
+    -- off the unit the tooltip was filled with. Hooked once per tooltip.
+    local function HookTip(tip)
+        if not (tip and tip.HookScript and tip.GetUnit) or tip.socialDiaryHooked then return end
+        tip.socialDiaryHooked = true
+        pcall(tip.HookScript, tip, "OnTooltipSetUnit", function(self)
+            local _, unit = self:GetUnit()
+            if not unit then return end
+            local ok, guid = pcall(UnitGUID, unit)
+            if not ok or not guid then return end
+            local hooked, err = pcall(OnUnitTooltip, self, { guid = guid })
+            if not hooked then self.socialDiaryError = err end
+        end)
+    end
+
+    HookTip(GameTooltip)
+    HookTip(ItemRefTooltip)
+
+    -- The character and pet frames fill their own tooltips later in the
+    -- client's load, so they are reached when first shown.
+    local frame = CreateFrame("Frame")
+    frame:RegisterEvent("PLAYER_LOGIN")
+    frame:SetScript("OnEvent", function()
+        HookTip(GameTooltip)
+        HookTip(ItemRefTooltip)
+        HookTip(WorldFrame and WorldFrame.tooltip)
+    end)
 end

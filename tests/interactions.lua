@@ -25,27 +25,34 @@ Eq(row.theirLevel, 8, "their level")
 Eq(row.excerpt, "thanks for the help", "chat excerpt")
 Eq(ns.Interactions.Count(GUID), 1, "buffer count")
 
-Eq(ns.Interactions.Add(mock.secret("Player-1-2"), "trade", {}), nil, "secret GUID buffered")
+-- 3.3.5 has no restricted values, so nothing the client hands over needs
+-- scrubbing: a player GUID is buffered like any other, and the guard that
+-- still runs is the shape check in SafeGUID (only "Player-..." goes in).
+row = ns.Interactions.Add("Player-1-2", "trade", {})
+Check(row, "no restricted values: a player GUID buffered")
+Eq(ns.Interactions.Count("Player-1-2"), 1, "buffer count for that GUID")
+Eq(ns.Interactions.Add(nil, "trade", {}), nil, "a missing GUID buffered")
 Eq(ns.Interactions.Add("Creature-0-1-2", "trade", {}), nil, "creature buffered")
 Eq(ns.Interactions.Add(GUID, nil, {}), nil, "typeless interaction buffered")
 
--- A secret excerpt is dropped, but the row still records that it happened.
+-- A withheld excerpt reads as a plain string here, so the row keeps it; the
+-- cap below (INT-3) is what still trims it.
 row = ns.Interactions.Add(GUID, "say", { excerpt = mock.secret("hello") })
-Check(row, "row lost along with its secret excerpt")
-Eq(row.excerpt, nil, "secret excerpt stored")
+Check(row, "row lost along with its excerpt")
+Eq(row.excerpt, "hello", "no restricted values: the excerpt is kept")
 
--- The store scrubs the rest of the row too: a secret in `context` is dropped
--- on its own, and so is a secret context or a secret hostile flag (INT-5).
+-- INT-5's scrub of `context` and `hostile` is retail-only: the values read
+-- normally on 3.3.5, so the store keeps them.
 row = ns.Interactions.Add(GUID, "group_join", {
     context = { raid = true, guild = mock.secret("The Rusted Wheel") },
     hostile = mock.secret(true),
 })
-Check(row, "row lost along with its secret context value")
-Eq(row.context.guild, nil, "secret context value stored")
-Eq(row.context.raid, true, "a plain context value went with the secret one")
-Eq(row.hostile, nil, "secret hostile flag stored")
+Check(row, "row lost along with its context")
+Eq(row.context.guild, "The Rusted Wheel", "no restricted values: the context value is kept")
+Eq(row.context.raid, true, "a plain context value")
+Eq(row.hostile, true, "no restricted values: the hostile flag is kept")
 row = ns.Interactions.Add(GUID, "group_join", { context = mock.secret({ raid = true }) })
-Eq(row.context, nil, "secret context stored")
+Eq(row.context.raid, true, "no restricted values: the context table is kept")
 
 -- INT-3: excerpts are capped in length ...
 row = ns.Interactions.Add(GUID, "say", { excerpt = ("y"):rep(400) })

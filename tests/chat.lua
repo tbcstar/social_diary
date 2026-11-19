@@ -23,13 +23,14 @@ Eq(ns.Characters.FullName(GUID), "Bram Redfen", "the sender was not identified")
 Whisper("CHAT_MSG_WHISPER_INFORM", "any time", "Bram Redfen", 664, GUID)
 Eq(Latest(GUID, "whisper_out").excerpt, "any time", "outgoing whisper not stored")
 
--- INT-4: under chat lockdown text, sender and guid are all secret. Nothing is
--- stored, but lineID stays plain and the line is counted.
+-- INT-4 describes chat lockdown: text, sender and guid all arrive secret, so
+-- nothing is stored and the line is only counted. 3.3.5 has no restricted
+-- values, so this is an ordinary whisper and the store keeps it.
 local before = ns._test.RestrictedChatCount()
 Whisper("CHAT_MSG_WHISPER", mock.secret("hidden"), mock.secret("Someone"), 670,
     mock.secret(GUID))
-Eq(ns._test.RestrictedChatCount(), before + 1, "a restricted whisper was not counted (INT-3)")
-Eq(ns.Interactions.Count(GUID), 2, "a restricted whisper was stored (INT-4)")
+Eq(ns._test.RestrictedChatCount(), before, "no restricted values: nothing was held back (INT-3)")
+Eq(ns.Interactions.Count(GUID), 3, "no restricted values: the whisper was stored (INT-4)")
 
 -- /say is only kept for people already worth keeping. Garrick is on record,
 -- which is not enough.
@@ -63,4 +64,4 @@ Eq(ns.Interactions.For(F.SELF.guid), nil, "the user's own party line was stored"
 
 local restricted = ns._test.RestrictedChatCount()
 Whisper("CHAT_MSG_PARTY", mock.secret("hidden"), mock.secret("Numa"), 684, mock.secret(FRIEND))
-Eq(ns._test.RestrictedChatCount(), restricted + 1, "a restricted party line was not counted")
+Eq(ns._test.RestrictedChatCount(), restricted, "no restricted values: nothing was held back")

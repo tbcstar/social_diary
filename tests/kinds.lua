@@ -117,20 +117,8 @@ end
 --------------------------------------------------------------------------
 Section("every feature's files load, and core names no feature")
 
-local function Read(path)
-    local f = assert(io.open(path, "r"), "cannot read " .. path)
-    local s = f:read("*a")
-    f:close()
-    return s
-end
-local function Ls(cmd)
-    local list, p = {}, assert(io.popen(cmd))
-    for line in p:lines() do list[#list + 1] = line end
-    p:close()
-    return list
-end
-
-local toc = Read("social_diary.toc")
+local FS = T.FS
+local toc = FS.Read(FS.Toc("."))
 local packaged = toc:match("^(.-)#@do%-not%-package@") or toc
 
 -- A feature is a folder of files: Features/<Name>/, or one level down in a
@@ -139,17 +127,17 @@ local packaged = toc:match("^(.-)#@do%-not%-package@") or toc
 -- own; each feature in it makes ns.<Name>, so two features may not share a
 -- name across groups.
 local features, folders = {}, {}
-for _, top in ipairs(Ls("ls -1 Features")) do
-    local inner = Ls("find Features/" .. top .. " -mindepth 1 -maxdepth 1 -type d | sort")
+for _, top in ipairs(FS.Dirs("Features")) do
+    local inner = FS.Dirs("Features/" .. top)
     if #inner == 0 then
         features[#features + 1] = top
         folders[top] = "Features/" .. top
     else
-        Check(#Ls("find Features/" .. top .. " -mindepth 1 -maxdepth 1 -type f") == 0,
+        Check(#FS.Files("Features/" .. top) == 0,
             "Features/" .. top .. " holds folders and files: a group holds folders only")
-        for _, dir in ipairs(inner) do
-            local name = dir:match("([^/]+)$")
-            Check(#Ls("find " .. dir .. " -mindepth 1 -type d") == 0, dir .. " is nested deeper than a group")
+        for _, name in ipairs(inner) do
+            local dir = "Features/" .. top .. "/" .. name
+            Check(#FS.WalkDirs(dir) == 0, dir .. " is nested deeper than a group")
             Check(folders[name] == nil, dir .. " shares its name with " .. tostring(folders[name]))
             features[#features + 1] = name
             folders[name] = dir
@@ -158,7 +146,7 @@ for _, top in ipairs(Ls("ls -1 Features")) do
 end
 Check(#features > 0, "no Features/ folder")
 for _, name in ipairs(features) do
-    for _, file in ipairs(Ls("ls -1 " .. folders[name])) do
+    for _, file in ipairs(FS.Files(folders[name])) do
         local path = folders[name] .. "/" .. file
         Check(toc:find(path, 1, true) ~= nil, path .. " is not in the TOC")
         if file == "Dev.lua" then
@@ -167,14 +155,14 @@ for _, name in ipairs(features) do
     end
     Check(ns[name] ~= nil, folders[name] .. " makes no ns." .. name)
 end
-local pkgmeta = Read(".pkgmeta")
+local pkgmeta = FS.Read(".pkgmeta")
 Check(pkgmeta:find("Features/*/Dev.lua", 1, true) ~= nil, ".pkgmeta does not leave the features' Dev.lua out")
 Check(pkgmeta:find("Features/*/*/Dev.lua", 1, true) ~= nil, ".pkgmeta does not leave a group's features' Dev.lua out")
 
 -- Every file under these folders, however deep (UI's areas are folders).
 for _, dir in ipairs({ "Core", "UI", "Capture", "Dev" }) do
-    for _, file in ipairs(Ls("find " .. dir .. " -name '*.lua' 2>/dev/null | sort")) do
-        local code = Read(file)
+    for _, file in ipairs(FS.Find(dir)) do
+        local code = FS.Read(file)
         for _, name in ipairs(features) do
             Check(not code:find("ns%." .. name .. "[^%w_]"), file .. " names the feature ns." .. name)
         end
@@ -237,4 +225,4 @@ local function Conform(file, code)
     end
     Check(#wrong == 0, file .. " " .. table.concat(wrong, "; "))
 end
-for _, file in ipairs(Ls("find Features -name '*.lua' 2>/dev/null | sort")) do Conform(file, Read(file)) end
+for _, file in ipairs(FS.Find("Features")) do Conform(file, FS.Read(file)) end

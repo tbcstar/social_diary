@@ -11,12 +11,7 @@
 local T = ...
 local Section, Check = T.Section, T.Check
 
-local function Ls(cmd)
-    local list, p = {}, assert(io.popen(cmd))
-    for line in p:lines() do list[#list + 1] = line end
-    p:close()
-    return list
-end
+local FS = T.FS
 
 -- The dot as the client gets it, and the ways a Lua source may write it.
 local DOTS = { "\194\183", "\\194\\183", "\\xC2\\xB7", "\\xc2\\xb7", "\\u{B7}", "\\u{b7}", "\\u{00B7}", "\\u{00b7}" }
@@ -41,10 +36,10 @@ end
 
 Section("no middle dots in anything a player reads")
 
-local files = Ls("find Core Capture UI Features Locales Dev -name '*.lua' 2>/dev/null | sort")
+local files = FS.FindIn({ "Core", "Capture", "UI", "Features", "Locales", "Dev" })
 Check(#files >= 50, "the sources not found from " .. (os.getenv("PWD") or "?"))
 -- Read in the client as they are: the changelog page, the AddOns list.
-for _, extra in ipairs({ "CHANGELOG.md", "social_diary.toc" }) do files[#files + 1] = extra end
+for _, extra in ipairs({ "CHANGELOG.md", FS.Toc(".") }) do files[#files + 1] = extra end
 
 local found = {}
 for _, file in ipairs(files) do

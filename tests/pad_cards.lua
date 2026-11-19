@@ -207,6 +207,9 @@ Eq(At().key, onMark.key, "not back on the mark")
 --------------------------------------------------------------------------
 Section("off this map: not offered on the plate; at the mark's spot on a mark")
 
+-- A client always has an area id, so the player "elsewhere" is another
+-- zone's map (The Barrens), not a missing one: no position on this map.
+mock.mapID, mock.position = 1413, { x = 0.5, y = 0.5 }
 Press("PAD2")
 Eq(At().plate, 1, "setup: on the plate")
 Eq(Legend().PAD4, nil, "Y offered on a plate with the player elsewhere")
@@ -215,7 +218,7 @@ Check(not Sheet(), "Y opened something with the player elsewhere")
 -- In an instance on the zone's map: no position given, the same.
 mock.mapID, mock.position, mock.inInstance = MAP, { x = 0.5, y = 0.5 }, true
 Eq(Legend().PAD4, nil, "Y offered in an instance")
-mock.mapID, mock.position, mock.inInstance = nil, nil, nil
+mock.mapID, mock.position, mock.inInstance = 1413, { x = 0.5, y = 0.5 }, nil
 
 -- A mark that is not a card's (the close call's, its spot taken off) lends
 -- its own spot, as a right click on it would.
