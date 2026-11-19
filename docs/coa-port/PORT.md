@@ -80,6 +80,15 @@
    做法与 `Textures.lua` 的 `SetColorTexture` 相同：`getmetatable(widget).__index` 是该类控件的共享方法表，逐个**只在缺失时**填（成员级，绝不覆盖客户端自带的）；`SetDesaturation` 走 `SetDesaturated`，`GetUnboundedStringWidth` 退回 `GetStringWidth`，其余是 no-op / `false` / `nil`。真机 19 Nov 2026 的崩溃 `UI/Kit/List.lua:362: attempt to call method 'SetClipsChildren' (a nil value)` 就是它修的。
    **不要**补 `CreateMaskTexture`/`AddMaskTexture`（假 mask 会印错图，调用点本来就先问 `if x.CreateMaskTexture then`，见 `UI/Map/Dungeon.lua:203`）和 `EventRegistry:RegisterCallback`（不是控件方法，`UI/Windows/Reunion/Placing.lua:94` 自带 guard）。测试见 `tests/widgets.lua`。
 
+14. **不是控件"方法"缺失，而是控件没有那个"脚本槽"**：3.3.5 的普通 Frame 上**没有** `OnHyperlinkClick` /
+    `OnHyperlinkEnter` / `OnHyperlinkLeave`，`SetScript` 用这三个名字会抛
+    `<unnamed> doesn't have a "OnHyperlinkClick" script`（真机 19 Nov 2026，`UI/Journey/Left.lua:491`，一开日记就炸）。
+    本客户端只在自己的聊天框 / simple HTML 上认这三个名字（`_ui-port-scratch/out/Interface` 里 `ChatFrame.xml:15`、
+    `SharedPanelTemplates.lua:1379`、`UIPanelTemplates.xml:966`），普通按钮没有。做法：先建一个自家按钮 `pcall` 探
+    `SetScript`，结论缓存；没有就**不给控件设这三个脚本，文本里也别写 `|H...|h` 标记**（客户端会当原文读出来），
+    名字改用纯色 `|cff<hex>名字|r`（`UI/Journey/Left.lua` 的 `TakesLinks` / `LinkScript` / `PLAIN`，测试见
+    `tests/links.lua`，它用一个拒绝超链接脚本的假客户端复现崩溃）。
+
 ## 3. 兼容层契约（`Core/Compat/`，owner: core-port）
 
 每个文件在 TOC 里紧跟 `Core/Addon.lua` 之后、`Locales/` 之前加载。**按成员补齐，不做整表 guard**（硬性规则 9）：

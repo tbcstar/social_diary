@@ -102,6 +102,29 @@ end
 -- people from the diary crossed there, by the name the prose gives them,
 -- the longest first so "Koko Skybluff" is never cut to "Koko".
 local LINK = "|Hsdperson:%s|h|cff" .. Style.HEX.accent .. "%s|r|h"
+-- ...where the client has links at all. 3.3.5a has no OnHyperlink* script
+-- on a frame and setting one raises ("<unnamed> doesn't have a
+-- 'OnHyperlinkClick' script", seen in game 19 Nov 2026), so the names are
+-- then set in the accent colour alone, without the markup (which would be
+-- read out as raw text). Asked once, on a button of our own never shown:
+-- LINKS stays nil until the first row is built, then keeps the answer.
+local LINKS
+local function TakesLinks()
+    if LINKS ~= nil then return LINKS end
+    local probe = CreateFrame("Button", nil, UIParent)
+    probe:Hide()
+    LINKS = pcall(probe.SetScript, probe, "OnHyperlinkClick", function() end)
+    if LINKS then probe:SetScript("OnHyperlinkClick", nil) end
+    return LINKS
+end
+
+-- The same name where it cannot be clicked: the colour, no markup.
+local PLAIN = "|cff" .. Style.HEX.accent .. "%s|r"
+
+-- frame:SetScript(name, fn), on a script the client has (TakesLinks).
+local function LinkScript(frame, name, fn)
+    if TakesLinks() then frame:SetScript(name, fn) end
+end
 
 local function NamesOf(e)
     local names, seen = {}, {}
@@ -124,7 +147,7 @@ local function Linked(line, names)
     for i, n in ipairs(names) do
         local pattern = n.name:gsub("%p", "%%%0")
         line = line:gsub(pattern, function()
-            marks[#marks + 1] = LINK:format(n.guid, n.name)
+            marks[#marks + 1] = TakesLinks() and LINK:format(n.guid, n.name) or PLAIN:format(n.name)
             return "\001" .. #marks .. "\002"
         end)
     end
@@ -486,15 +509,17 @@ local function BuildEntryRow(list)
     row.text:SetWidth(w)
     row.text:SetWordWrap(true)
     row.text:SetSpacing(ENTRY.leading)
-    -- The names in the prose are links to their pages.
+    -- The names in the prose are links to their pages, where the client has
+    -- hyperlink scripts (TakesLinks: 3.3.5a has none, and the names are set
+    -- plain there instead).
     if row.SetHyperlinksEnabled then row:SetHyperlinksEnabled(true) end
-    row:SetScript("OnHyperlinkClick", function(_, link)
+    LinkScript(row, "OnHyperlinkClick", function(_, link)
         local guid = type(link) == "string" and link:match("^sdperson:(.+)$")
         if guid then ToPerson(guid) end
     end)
     -- A stranger's name (a hindsight line's) says where it leads, as their
     -- margin strip does; a diary person's says nothing, as before.
-    row:SetScript("OnHyperlinkEnter", function(self, link)
+    LinkScript(row, "OnHyperlinkEnter", function(self, link)
         local guid = type(link) == "string" and link:match("^sdperson:(.+)$")
         if not guid or ns.Diary.IsDiary(guid) then return end
         local list = ns.UI.PersonText.GlimpseTip(ns.Characters.FullName(guid) or ns.Characters.Name(guid))
@@ -503,7 +528,7 @@ local function BuildEntryRow(list)
         for i = 2, #list do GameTooltip:AddLine(unpack(list[i])) end
         GameTooltip:Show()
     end)
-    row:SetScript("OnHyperlinkLeave", function() GameTooltip:Hide() end)
+    LinkScript(row, "OnHyperlinkLeave", function() GameTooltip:Hide() end)
 
     -- The rubric: paraph, red capitals, "so far", a red rule fading out to
     -- the faces.
