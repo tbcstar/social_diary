@@ -7,7 +7,9 @@
 
 本仓库是 [Social Diary](https://github.com/social-diary/social_diary) 4.2.0 的
 **Conquest of Azeroth（CoA）移植版**：目标客户端是 **3.3.5a（WotLK）+ CoA**，
-Interface 号为 **30300**，并已全量汉化（默认中文）。
+Interface 号为 **30300**，并已全量汉化（默认中文）。源码在
+[tbcstar/social_diary](https://github.com/tbcstar/social_diary) 的 `coa-port` 分支，
+基线是上游 v4.2.0。
 
 ## 安装
 
@@ -28,7 +30,18 @@ python tools/coa_pack.py --info     # 只对照本插件与客户端已装插件
 ```
 
 默认客户端路径是 `D:\Game\CoA-live-64`，可用 `--client` 指定。更多安装与排错
-见 [INSTALL.md](../INSTALL.md)。
+见 [INSTALL.md](docs/coa-port/INSTALL.md)。
+
+## 移植记录
+
+这次移植做了什么、哪些能力在 3.3.5a 上降级、怎么验证的，都写在仓库里：
+
+- [PORT.md](docs/coa-port/PORT.md)：移植契约（能力三档、存档兼容、失败关闭）
+- [DELIVERY.md](docs/coa-port/DELIVERY.md)：交付清单与逐条验收
+- [VERIFY.md](docs/coa-port/VERIFY.md)：验证记录与结果
+- [i18n-gaps.md](docs/coa-port/i18n-gaps.md)：汉化的取舍与留英文清单
+
+这些文档不打进发布包（`.pkgmeta` 的 `docs` 排除项）。
 
 ## 上手
 
@@ -49,12 +62,17 @@ python tools/coa_pack.py --info     # 只对照本插件与客户端已装插件
   德语、西班牙语、法语、意大利语、波兰语、俄语，以及 4.2.0 新增的巴西葡萄牙语。
 - 界面字符串 100% 走 `L[...]`，中文词条 1872/1872 全覆盖；界面里不再有遗漏的
   英文标题（示例人名 Thex 有意保留原文）。
+- 插件列表（AddOns）里显示的名字与说明也是中文（“冒险日记”/“记住你在野外
+  遇见的每一个人。”）：直接写进 `social_diary.toc` 的 `## Title` / `## Notes`，
+  因为 3.3.5 的插件列表对每个客户端语言只认一套标题，而 CoA 客户端只装了
+  enUS；上游英文原文留在同一处的注释里，合并上游时照着核对。
 - **地名、副本名、职业名是“显示期翻译”**：手账里显示中文（含 32 个 CoA 职业
   的中文名），存档、比较、索引仍用客户端英文原名与职业 token，因此换语言或换
   客户端不会串数据；英文客户端下这些名字仍是英文。
 - CoA 自创内容（部分职业、自创副本与区域、42 个种族）没有官方中文来源，按“查
-  不到就留英文、不臆造”的原则处理；完整清单与理由见移植工作区的
-  docs/i18n-gaps.md（不在插件包内，避免把开发文档打进发布包）。
+  不到就留英文、不臆造”的原则处理；完整清单与理由见
+  [i18n-gaps.md](docs/coa-port/i18n-gaps.md)（不打进发布包，避免把开发文档
+  塞进发布目录）。
 
 ## CoA 适配：哪些能用，哪些降级
 
