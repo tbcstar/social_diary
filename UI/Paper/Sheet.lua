@@ -351,7 +351,11 @@ function ns.UI.LooseSheet(parent, W, H, opts)
 
     -- How facet i, j is lit: evenly, laid flat.
     local function FacetLight(i, j)
-        if view.flat or not mesh[i] then return 1 end
+        -- Laid flat, or on a client that cannot move a texture's corners
+        -- (PORT.md §5): the mesh only says how the paper it can bend is
+        -- lit, and the facets of paper drawn as plain rectangles would
+        -- show as a mosaic of tones.
+        if view.unbent or not mesh[i] then return 1 end
         return mesh[i][j].light or 1
     end
 
@@ -686,7 +690,7 @@ function ns.UI.LooseSheet(parent, W, H, opts)
         -- is a dark line. None, laid flat.
         creasePool:Begin()
         local I, V = INK, CREASE
-        for k, fold in pairs(view.flat and {} or folds.columns) do
+        for k, fold in pairs(view.unbent and {} or folds.columns) do
             local sign = fold.sign
             for j = 1, NY - 1 do
                 local x = X[k]
@@ -698,7 +702,7 @@ function ns.UI.LooseSheet(parent, W, H, opts)
                 end
             end
         end
-        for k, fold in pairs(view.flat and {} or folds.rows) do
+        for k, fold in pairs(view.unbent and {} or folds.rows) do
             local sign = fold.sign
             for i = 1, NX - 1 do
                 local y = Y[k]
@@ -716,14 +720,14 @@ function ns.UI.LooseSheet(parent, W, H, opts)
         -- overlapping where folds cross. None, laid flat.
         grimePool:Begin()
         local b, seed = GRUNGE.band * (1 + (worn - 1) * 0.5), view.seed or 0
-        for k in pairs(view.flat and {} or folds.columns) do
+        for k in pairs(view.unbent and {} or folds.columns) do
             local x = X[k]
             for j = 1, NY - 1 do
                 Grime(x - b, Y[j], x, Y[j + 1], "HORIZONTAL", true, seed + k * 3.1 + j * 1.7)
                 Grime(x, Y[j], x + b, Y[j + 1], "HORIZONTAL", false, seed + k * 3.1 + j * 1.7 + 0.9)
             end
         end
-        for k in pairs(view.flat and {} or folds.rows) do
+        for k in pairs(view.unbent and {} or folds.rows) do
             local y = Y[k]
             for i = 1, NX - 1 do
                 Grime(X[i], y - b, X[i + 1], y, "VERTICAL", false, seed + k * 5.3 + i * 2.3)
@@ -865,6 +869,8 @@ function ns.UI.LooseSheet(parent, W, H, opts)
     function K.Lay()
         view.flat = ns.Setting("flatSheets") == true
         view.bends = view.canBend and not view.flat and not opts.glued
+        -- What is drawn: a sheet that cannot bend is drawn as laid flat.
+        view.unbent = view.flat or not view.bends
         S:ClearAllPoints()
         if opts.glued then
             -- Turned as given, not as it fell; straight laid flat, or where

@@ -102,6 +102,15 @@
     `Grime` 都是转调它，别再各自 `pcall`）。教训：`pcall` 不报错 ≠ 调用生效，凡是"传对象 / 传数字"两种写法的
     API，都要像规则 11 那样先确认客户端认哪种。测试见 `tests/gradient.lua`。
 
+16. **"不能弯"要当成"铺平"来画，别只当成"少一次调用"**：纸张的网格（`UI/Paper/Sheet.lua` 的
+    `Crumple`/`FacetLight`）描述的是**能弯的纸**被光照成什么样；客户端的纹理移不了角（`SetVertexOffset` 缺失）时，
+    每个 facet 只能画成自己的矩形，于是同一张纸被 21 种明度的矩形拼成**马赛克**（真机 19 Nov 2026：引导 1/5 页整页
+    方格网，色块不再实心但一层层半透明接缝清晰）。作者已经写好了"铺平"这条路径（`flatSheets`）：facet 一律同色、
+    不画 crease、不画 grime。做法：`Lay` 里加 `view.unbent = view.flat or not view.bends`，`FacetLight` 与四处
+    crease/grime 循环都改判它（`UI/Paper/Sheet.lua:358、:693、:705、:723、:730`）。教训：能力缺失不只要退掉那次
+    调用，还要退掉**基于该能力的外观假设**。测试见 `tests/sheet_flat.lua`（同一张纸，弯与不弯各画一次，断言不弯时
+    只有一种纸色、零 crease、零 grime；把 `view.unbent` 改回 `view.flat` 立刻变 22 种纸色而失败）。
+
 ## 3. 兼容层契约（`Core/Compat/`，owner: core-port）
 
 每个文件在 TOC 里紧跟 `Core/Addon.lua` 之后、`Locales/` 之前加载。**按成员补齐，不做整表 guard**（硬性规则 9）：

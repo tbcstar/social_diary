@@ -82,6 +82,7 @@ local FILES = {
     "socialtab",
     "widgets",
     "gradient",
+    "sheet_flat",
     "sightings",
     "timeline",
     "person_plate",
