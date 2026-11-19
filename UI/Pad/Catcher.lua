@@ -458,7 +458,7 @@ end
 local function RepeatUpdate(self, elapsed)
     self.wait = self.wait - elapsed
     if self.wait > 0 then return end
-    if not (IsKeyDown and IsKeyDown(self.repeatKey)) then return self:Repeat(nil) end
+    if not Pad.KeyDown(self.repeatKey) then return self:Repeat(nil) end
     self.wait = REPEAT_EVERY
     local scope = Pad.Top()
     if scope and Host(scope) == self.host then

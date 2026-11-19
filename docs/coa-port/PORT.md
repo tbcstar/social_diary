@@ -61,6 +61,13 @@
    整包 Lua 一行都不执行（插件列表里还有名字、勾选也在，只是 `/sd` 不存在）。上游为 retail 写的是 `/`，
    所以合并上游 TOC 后必须再转一次；`tools/coa_audit.py` 的 R2 会拦。
 
+11. **客户端有的函数，签名未必和 retail 一样**：名字存在 ≠ 能这么调。例：`IsKeyDown` 在本客户端收**数字键码**
+   （它自己的 `FrameXML/GameTooltip.lua:1203` 传 `Enum.Key.F1`），照 retail 传按钮名 `"PAD1"` 会抛
+   `bad argument #1 to 'IsKeyDown' (number expected, got string)`，而且每个鼠标按下刷满屏。
+   跨版本调用的写法：先试客户端认的形态（`Enum.Key[name]`），拿不到就 `pcall` 探一次并**缓存结论**，
+   以后不再问（`UI/Pad/Input.lua` 的 `Pad.KeyDown`）。判断"客户端有没有这个函数"用解出的 FrameXML 搜定义，
+   判断"能不能这么调"只能靠探针或真机，不要凭名字假定。
+
 ## 3. 兼容层契约（`Core/Compat/`，owner: core-port）
 
 每个文件在 TOC 里紧跟 `Core/Addon.lua` 之后、`Locales/` 之前加载。**按成员补齐，不做整表 guard**（硬性规则 9）：

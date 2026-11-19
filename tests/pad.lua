@@ -616,3 +616,33 @@ mock.fire("GAME_PAD_ACTIVE_CHANGED", true)
 Eq(Pad.Input.reason, "picked up: the game said so", "an event while asleep")
 ns.UI.ShowJournal()
 Check(Pad.Input.Watching(), "not awake again with the book opened")
+--------------------------------------------------------------------------
+Section("a client whose IsKeyDown wants a key code, not a button name")
+
+-- The 3.3.5 client Ascension ships raises for a name ("bad argument #1 to
+-- 'IsKeyDown' (number expected, got string)", seen in game, 19 Nov 2026;
+-- its own FrameXML passes Enum.Key.F1). The probe takes a code the client
+-- names, then stops asking about names it cannot answer, so a mouse-down
+-- while the pad is off is quiet and the catcher's repeat never raises.
+local realKeyDown = _G.IsKeyDown
+local asked = 0
+_G.IsKeyDown = function(key)
+    if type(key) ~= "number" then
+        error("bad argument #1 to 'IsKeyDown' (number expected, got " .. type(key) .. ")", 2)
+    end
+    asked = asked + 1
+    return key == 90
+end
+Enum.Key = { F1 = 90 }
+Check(Pad.KeyDown("F1"), "a button named by a code the client takes")
+Eq(asked, 1, "the code asked for")
+Check(not Pad.KeyDown("F2"), "a name the client has no code for")
+Eq(asked, 1, "a name asked as a code it has none for")
+Enum.Key = nil
+Check(not Pad.KeyDown("PAD1"), "a button name this client cannot answer")
+Eq(asked, 1, "a name it cannot answer was still asked")
+Check(not Pad.KeyDown("PAD1"), "asked again")
+Eq(asked, 1, "an answer it cannot give was asked for twice")
+Check(not Pad.Input.KeyHeld(), "a pad button held by a client that cannot say")
+_G.IsKeyDown = realKeyDown
+

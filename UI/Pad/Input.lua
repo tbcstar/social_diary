@@ -78,11 +78,36 @@ function Input.Available()
     return Input.GamepadUI() and Enabled() and Connected()
 end
 
+-- The client's word on a button held. Retail names the button ("PAD1");
+-- the 3.3.5 client Ascension ships wants a key code instead and raises
+-- "bad argument #1 to 'IsKeyDown' (number expected, got string)" for a
+-- name (its own FrameXML passes Enum.Key.F1, GameTooltip.lua:1203; seen in
+-- game, 19 Nov 2026). Each name is tried once and the answer kept, so a
+-- client that cannot name it goes quiet rather than raising on every
+-- mouse-down, and a client whose Gamepad UI is off is just not held.
+local askAs = {}   -- name -> the form this client takes, or false
+local function KeyDown(name)
+    if not IsKeyDown then return false end
+    local form = askAs[name]
+    if form == nil then
+        local enum = Enum and Enum.Key
+        form = (enum and enum[name]) or false
+        if form == false then
+            local ran = pcall(IsKeyDown, name)
+            form = ran and name or false
+        end
+        askAs[name] = form
+    end
+    if not form then return false end
+    local ok, down = pcall(IsKeyDown, form)
+    return (ok and down) and true or false
+end
+Pad.KeyDown = KeyDown
+
 -- A pad button held right now.
 function Input.KeyHeld()
-    if not IsKeyDown then return false end
     for _, key in ipairs(Pad.KEYS) do
-        if IsKeyDown(key) then return true end
+        if KeyDown(key) then return true end
     end
     return false
 end
