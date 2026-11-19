@@ -673,13 +673,25 @@ function ns.UI.LooseSheet(parent, W, H, opts)
                     Bend(inkPool:Next(), x0 - (i == 1 and 1 or 0), y0 - (j == 1 and 1 or 0),
                         x1 + (i == NX - 1 and 1 or 0), y1 + (j == NY - 1 and 1 or 0))
                 end
-                if grainPath then
+                -- (Laid flat, the grain is one sheet of it, below: a crop a
+                -- facet would show its seams as a grid of tones.)
+                if grainPath and not view.unbent then
                     local grain = grainPool:Next()
                     grain:SetAlpha(0.14 * Style.GrainStrength())
                     grain:SetTexCoord(x0 / W, x1 / W, y0 / H, y1 / H)
                     Bend(grain, x0, y0, x1, y1)
                 end
             end
+        end
+        -- Laid flat, the grain is one crop across the whole sheet: a crop a
+        -- facet would leave a seam at every facet edge, a grid of tones over
+        -- the page (19 Nov 2026: the tour's sheet, on a client that cannot
+        -- bend a texture).
+        if grainPath and view.unbent then
+            local grain = grainPool:Next()
+            grain:SetAlpha(0.14 * Style.GrainStrength())
+            grain:SetTexCoord(0, 1, 0, 1)
+            Bend(grain, 0, 0, W, H)
         end
         inkPool:Finish()
         paperPool:Finish()
