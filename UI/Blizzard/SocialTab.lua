@@ -28,6 +28,12 @@ local ENABLED = true
 -- it, so it is not one of ns.UI's entry points (tests/ui_layout.lua).
 local FriendsTab = {}
 
+-- A button built from FrameXML's tab template must carry a name. Parts of the
+-- template's own scripts reach its sub-textures as _G[button:GetName() .. "Left"]
+-- (PanelTemplates_TabResize, FrameXML/UIPanelTemplates.lua:41), and a nameless
+-- button throws inside them with "attempt to concatenate local 'tabName'".
+FriendsTab.name = "SocialDiaryFriendsTab"
+
 -- FrameXML spaces the window's own tabs 15 to the left of each other.
 local GAP = -15
 
@@ -140,6 +146,13 @@ local function Build()
         PlayTabSound()
         OpenJournal()
     end)
+
+    -- The template's OnShow re-sizes the tab through PanelTemplates: it reads
+    -- the button's name and its sub-textures again and overrides the width set
+    -- above. We size this tab ourselves and stay outside the tab system, so
+    -- the handler goes; it was what threw in game on 19 Nov 2026, when
+    -- DragonUI's warm-up showed the Social window.
+    tab:SetScript("OnShow", nil)
 
     FriendsTab.frame = tab
     return tab

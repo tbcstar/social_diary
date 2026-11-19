@@ -68,6 +68,13 @@
    以后不再问（`UI/Pad/Input.lua` 的 `Pad.KeyDown`）。判断"客户端有没有这个函数"用解出的 FrameXML 搜定义，
    判断"能不能这么调"只能靠探针或真机，不要凭名字假定。
 
+12. **从 Blizzard 模板造的控件要带名字，不要的模板脚本要显式清掉**。3.3.5 的模板脚本按名字取子纹理
+   （`_G[button:GetName() .. "Middle"]`，`FrameXML/UIPanelTemplates.lua:41` 的 `PanelTemplates_TabResize`），
+   **无名按钮**直接抛 `attempt to concatenate local 'tabName' (a nil value)`，而且触发点常常是别的插件
+   显示那个窗口的时候（真机 19 Nov 2026：DragonUI 预热 `Show()` 社交窗 → 我们挂在好友窗上的标签页报错）。
+   做法：`CreateFrame` 时给名字；模板自带、我们又不参与的那套处理器一律 `SetScript("OnShow", nil)`
+   （`UI/Blizzard/SocialTab.lua`，测试见 `tests/socialtab.lua`）。
+
 ## 3. 兼容层契约（`Core/Compat/`，owner: core-port）
 
 每个文件在 TOC 里紧跟 `Core/Addon.lua` 之后、`Locales/` 之前加载。**按成员补齐，不做整表 guard**（硬性规则 9）：

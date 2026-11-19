@@ -328,6 +328,16 @@ local function NewWidget(frameType, name, parent, template)
         self.text = value or ""
     end
     function w:GetText() return self.text end
+    -- A button's own text as a font string, as the client keeps it: made the
+    -- first time it is asked for, with a font (the button's template gives it
+    -- one) and the words set so far.
+    function w:GetFontString()
+        if not self.fontString then
+            self.fontString = w:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
+        end
+        self.fontString:SetText(self.text or "")
+        return self.fontString
+    end
 
     -- Sliders. Like the client, SetValue clamps and fires OnValueChanged
     -- only when the value actually moves.
