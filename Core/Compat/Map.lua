@@ -183,17 +183,17 @@ do
     -- This client carries its own C_Map already (it answers GetBestMapForUnit),
     -- so every member is filled in only when missing. A wholesale table would
     -- overwrite what the client already answers correctly.
-    C_Map = C_Map or {}
-    C_Map.GetBestMapForUnit = C_Map.GetBestMapForUnit or BestMapForUnit
-    C_Map.GetMapInfo = C_Map.GetMapInfo or MapInfo
-    C_Map.GetPlayerMapPosition = C_Map.GetPlayerMapPosition or PlayerPosition
+    if not C_Map then C_Map = {} end
+    if not C_Map.GetBestMapForUnit then C_Map.GetBestMapForUnit = BestMapForUnit end
+    if not C_Map.GetMapInfo then C_Map.GetMapInfo = MapInfo end
+    if not C_Map.GetPlayerMapPosition then C_Map.GetPlayerMapPosition = PlayerPosition end
     -- No world coordinates on this client: a nil answer makes every caller
     -- take its documented nil branch.
-    C_Map.GetWorldPosFromMapPos = C_Map.GetWorldPosFromMapPos or function() return nil end
-    C_Map.GetMapPosFromWorldPos = C_Map.GetMapPosFromWorldPos or function() return nil end
-    C_Map.GetMapWorldSize = C_Map.GetMapWorldSize or function() return nil end
-    C_Map.GetMapArtLayers = C_Map.GetMapArtLayers or function() return nil end
-    C_Map.GetMapArtLayerTextures = C_Map.GetMapArtLayerTextures or function() return nil end
+    if not C_Map.GetWorldPosFromMapPos then C_Map.GetWorldPosFromMapPos = function() return nil end end
+    if not C_Map.GetMapPosFromWorldPos then C_Map.GetMapPosFromWorldPos = function() return nil end end
+    if not C_Map.GetMapWorldSize then C_Map.GetMapWorldSize = function() return nil end end
+    if not C_Map.GetMapArtLayers then C_Map.GetMapArtLayers = function() return nil end end
+    if not C_Map.GetMapArtLayerTextures then C_Map.GetMapArtLayerTextures = function() return nil end end
 
     -- The zone cache is keyed by the zone text, so a zone change already
     -- gives a new key; the event only drops the old entries.

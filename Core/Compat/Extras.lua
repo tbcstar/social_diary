@@ -5,20 +5,29 @@
 
 local addonName, ns = ...
 
--- The client carries its own C_CVar, so each call is filled in only when
--- missing: a whole-table guard would skip and leave C_CVar.GetCVar nil.
-C_CVar = C_CVar or {}
-C_CVar.GetCVar = C_CVar.GetCVar or function(name)
-    if GetCVar then return GetCVar(name) end
-    return nil
+-- The client carries its own C_CVar. The table is created only when absent and
+-- each member is added only when missing: assigning to a name the client
+-- already provides taints it for the session, and Blizzard code reading it
+-- then fails in a secure context (taint.log 21 Nov 2026, the UseAction report;
+-- PORT.md rule 22).
+if not C_CVar then C_CVar = {} end
+if not C_CVar.GetCVar then
+    C_CVar.GetCVar = function(name)
+        if GetCVar then return GetCVar(name) end
+        return nil
+    end
 end
-C_CVar.SetCVar = C_CVar.SetCVar or function(name, value)
-    if SetCVar then return SetCVar(name, value) end
-    return nil
+if not C_CVar.SetCVar then
+    C_CVar.SetCVar = function(name, value)
+        if SetCVar then return SetCVar(name, value) end
+        return nil
+    end
 end
-C_CVar.GetCVarBool = C_CVar.GetCVarBool or function(name)
-    if GetCVarBool then return GetCVarBool(name) end
-    return false
+if not C_CVar.GetCVarBool then
+    C_CVar.GetCVarBool = function(name)
+        if GetCVarBool then return GetCVarBool(name) end
+        return false
+    end
 end
 
 -- Retail-only tables. Empty means "the feature cannot run here"; the callers
@@ -41,7 +50,7 @@ if not C_RecentAllies then C_RecentAllies = {} end
 if not C_EncodingUtil then C_EncodingUtil = {} end
 if not scrubsecretvalues then scrubsecretvalues = function(value) return value end end
 
-C_NamePlate = C_NamePlate or {}
+if not C_NamePlate then C_NamePlate = {} end
 if not InputUtil then InputUtil = {} end
 
 -- CreateVector3D exists only to keep a caller's positioning branch honest: the
@@ -180,7 +189,11 @@ end
 -- shared table and the hook checks the tooltip object, so a second addon load
 -- (the test suite's per-file reload) replaces the callbacks instead of adding
 -- a second hook that listens to the first load's closures.
-TooltipDataProcessor = TooltipDataProcessor or {}
+-- The client has no TooltipDataProcessor of its own (no FrameXML reference
+-- in the 3.3.5 UI tree), so this table and its members are ours; the global
+-- is still created only when absent, because writing over a name the client
+-- provides taints it for the session (PORT.md rule 22).
+if not TooltipDataProcessor then TooltipDataProcessor = {} end
 TooltipDataProcessor.__callbacks = {}
 
 function TooltipDataProcessor.AddTooltipPostCall(dataType, fn)

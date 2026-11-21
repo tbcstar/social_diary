@@ -469,8 +469,8 @@ def load_client_native(path):
 def _sites(scan):
     """What one file does with retail-only names.
 
-    defs:    [(name, line, kind)]   kind "full" (X = ...), "guard" (X = X or {})
-                                    or "func" (function X(...)).
+    defs:    [(name, line, kind)]   kind "full" (X = ...), "guard" (X = X or {},
+                                    or inside "if not X then"), or "func" (function X(...)).
     members: [(base, member, line)] base.member = ... / function base:member(...)
     uses:    [(name, line, what)]   what "global", "method" or "template".
     """
@@ -498,6 +498,12 @@ def _sites(scan):
               and i >= 3 and toks[i - 2][0] == "name" and toks[i - 2][1] == "not"
               and toks[i - 3][0] == "name" and toks[i - 3][1] in ("if", "elseif")):
             guards.append((prev[1], depth + 1))
+        elif (kind == "name" and value == "then" and prev is not None and prev[0] == "name"
+              and i >= 5 and toks[i - 2][1] == "." and toks[i - 3][0] == "name"
+              and toks[i - 4][0] == "name" and toks[i - 4][1] == "not"
+              and toks[i - 5][0] == "name" and toks[i - 5][1] in ("if", "elseif")):
+            # "if not T.m then T.m = ... end" guards one member of a client table.
+            guards.append((toks[i - 3][1] + "." + prev[1], depth + 1))
         if kind == "name" and value in ("then", "do", "function", "repeat"):
             depth += 1
         if kind == "string":
@@ -517,16 +523,21 @@ def _sites(scan):
                                       and after_m[1] == "="))
             member_func = (before_m is not None and before_m[0] == "name"
                            and before_m[1] == "function")
-            # `M.m = M.m or impl` fills a member only when the client lacks it.
+            # `M.m = M.m or impl` fills a member only when the client lacks it,
+            # and "if not M.m then M.m = ... end" does the same without writing
+            # at all: an assignment over a name the client already provides
+            # taints that name for the session (PORT.md rule 22).
             member_fill = (member_assign and i + 5 < len(toks)
                            and toks[i + 2][0] == "name"
                            and toks[i + 2][1] == toks[i - 2][1]
                            and toks[i + 3][1] == "."
                            and toks[i + 4][1] == value
                            and toks[i + 5][1] == "or")
+            member_guarded = any(gname == toks[i - 2][1] + "." + value and gdepth <= depth
+                                 for gname, gdepth in guards)
             if member_assign or member_func:
                 members.append((toks[i - 2][1], value, line,
-                                "fill" if member_fill else "write"))
+                                "fill" if (member_fill or member_guarded) else "write"))
                 continue
         if kind != "name" or retail_kind(value) is None:
             continue
@@ -571,8 +582,11 @@ def _sites(scan):
                   and toks[i + 2][1] == value and toks[i + 3][0] == "name"
                   and toks[i + 3][1] == "or"):
                 kind_of_def = "guard"
-            elif any(gname == value and gdepth <= depth for gname, gdepth in guards):
-                kind_of_def = "guard"   # "if not X then X = ... end" never overwrites
+            # "if not X then ... end" never overwrites, whether what follows is
+            # "X = ..." or "function X(...)"; the same guard reading applies to
+            # "if X == nil then X = ... end".
+            if any(gname == value and gdepth <= depth for gname, gdepth in guards):
+                kind_of_def = "guard"
             defs.append((value, line, kind_of_def))
         else:
             uses.append((value, line, "global"))

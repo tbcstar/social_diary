@@ -186,6 +186,22 @@
     的宽度夹住，链接就压在名字末字上。修法（`Strip.lua` 的 `Lay`）：算 `nameRow`，放不下就置 `asideRow`，
     让链接**在名字下面另起一行**，`H`／`under`／`quoteTop`／`lineTop` 都加上这段高度；测试
     `tests/paper_strip.lua` 的 "a link that would run into the name"。
+22. **绝不写 `X = X or <fill-in>`：赋同一个值也算污染**。WoW 的污染模型是**按名字**记账的 —— addon 只要给某个全局
+    赋过一次值，这个名字在整个会话里就是 tainted，哪怕值没变、哪怕 `pcall` 不报错。原来 `Core/Compat/` 里大量
+    `C_Timer = C_Timer or {}`、`UnitFullName = UnitFullName or function() ... end` 正是这种写法，于是动作条按技能键时
+    客户端报「插件 social_diary 污染了安全函数 UseAction() 的调用」（真机 21 Nov 2026，弹窗 offer 禁用插件）。
+    证据：`Logs/taint.log`（config 里 `SetCVar taintLog 2`）里我们声明了 `C_CVar` `C_Timer` `UnitFullName`
+    `GetNumGroupMembers` `GetItemInfoInstant` `C_Map` 一长串名字，接着客户端读 `C_CVar`/`COMBAT_TEXT_*`/`GetMinimapShape`
+    的地方全被记成 tainted（`Blizzard_CombatText.lua:405` 十几万行），`SecureTemplates.lua` 里的 `UseAction` 只是最后炸的那处。
+    规则：**只在 `if not X then ... end` 里定义，缺什么补什么**；给客户端已经有的表加成员也一样
+    （`if not C_Map.GetBestMapForUnit then C_Map.GetBestMapForUnit = ... end`），不要先整表 `C_Map = C_Map or {}` 再写成员。
+    唯一例外是**客户端根本没有**的自有全局（`TooltipDataProcessor`：客户端 FrameXML 里 0 命中，可整表建），
+    但即便如此也要 `if not TooltipDataProcessor then` —— 那是防重复加载，不是防污染。
+    审计侧 `tools/coa_audit.py` 的 R1 认这几种形态：`X = X or {}`、`M.m = M.m or f`、`if not X then X = ... end`、
+    `if not X then function X(...) end end`、`if not T.m then T.m = ... end`；写成裸 `X = ...` 会直接报 class D。
+    测试见 `tests/taint.lua`（load 前后同一个函数对象 / 同一个成员对象，`MEMBERS` 断言 `C_Timer.After` 等没被换掉）。
+    教训：**污染不是报错**，`pcall` 成功、游戏照跑，问题在别人的安全代码里炸；所以「测试全绿」证明不了没污染，
+    要按 taint.log 的声明清单倒查（`C_*` 表与 `GetNumGroupMembers` 这类零售原生名优先）。
 ## 3. 兼容层契约（`Core/Compat/`，owner: core-port）
 
 每个文件在 TOC 里紧跟 `Core/Addon.lua` 之后、`Locales/` 之前加载。**按成员补齐，不做整表 guard**（硬性规则 9）：

@@ -104,11 +104,15 @@ end
 -- Unit tokens and group sizes
 -------------------------------------------------------------------------
 
--- UnitName already returns name, realm on 3.3.5, which is exactly what
--- UnitFullName answers; the name itself exists in retail only.
-UnitFullName = UnitFullName or function(unit)
-    local name, realm = UnitName(unit)
-    return name, realm
+-- UnitFullName answers name, realm, which 3.3.5's UnitName already returns.
+-- Defined only when the client lacks it: assigning to a global the client
+-- already provides taints that name for the whole session, and Blizzard code
+-- reading it then fails in a secure context (taint.log, 21 Nov 2026).
+if not UnitFullName then
+    function UnitFullName(unit)
+        local name, realm = UnitName(unit)
+        return name, realm
+    end
 end
 
 if not UnitTokenFromGUID then
@@ -137,15 +141,17 @@ if not UnitTokenFromGUID then
     end
 end
 
--- Retail counts the player in the group (10 for a full raid). Written as a
--- fill-in rather than a definition because this client may already carry the
--- function; if it does, its own copy stays.
-GetNumGroupMembers = GetNumGroupMembers or function()
-    local raid = GetNumRaidMembers and GetNumRaidMembers() or 0
-    if raid > 0 then return raid end
-    local party = GetNumPartyMembers and GetNumPartyMembers() or 0
-    if party > 0 then return party + 1 end
-    return 0
+-- Retail counts the player in the group (10 for a full raid). Defined only
+-- when the client has no copy, because assigning over a client global taints
+-- it (PORT.md rule 22).
+if not GetNumGroupMembers then
+    function GetNumGroupMembers()
+        local raid = GetNumRaidMembers and GetNumRaidMembers() or 0
+        if raid > 0 then return raid end
+        local party = GetNumPartyMembers and GetNumPartyMembers() or 0
+        if party > 0 then return party + 1 end
+        return 0
+    end
 end
 
 -------------------------------------------------------------------------
@@ -194,18 +200,22 @@ local function ItemIDFrom(item)
         },
     }
 
--- Fill-in, never a redefinition: a client that already has the function keeps it.
-GetItemInfoInstant = GetItemInfoInstant or function(item)
-    local id = ItemIDFrom(item)
-    if not id then return nil end
-    local name, link, quality, level, reqLevel, class, subclass, stack, equipLoc, icon = GetItemInfo(id)
-    if not name then
-        -- The client's cache has not seen it yet: the id is still known.
-        return id
+-- Fill-in, never a redefinition: a client that already has the function keeps
+-- it, and nothing is assigned over it. Writing a name the client already
+-- provides taints that name for the session (PORT.md rule 22).
+if not GetItemInfoInstant then
+    function GetItemInfoInstant(item)
+        local id = ItemIDFrom(item)
+        if not id then return nil end
+        local name, link, quality, level, reqLevel, class, subclass, stack, equipLoc, icon = GetItemInfo(id)
+        if not name then
+            -- The client's cache has not seen it yet: the id is still known.
+            return id
+        end
+        local classID = CLASS_IDS[class]
+        local subclassID = classID and SUBCLASS_IDS[classID] and SUBCLASS_IDS[classID][subclass] or nil
+        return id, class, subclass, equipLoc, icon, classID, subclassID
     end
-    local classID = CLASS_IDS[class]
-    local subclassID = classID and SUBCLASS_IDS[classID] and SUBCLASS_IDS[classID][subclass] or nil
-    return id, class, subclass, equipLoc, icon, classID, subclassID
 end
 
 -------------------------------------------------------------------------
@@ -297,21 +307,30 @@ do
         return job.handle
     end
 
-    -- This client carries its own C_Timer, so each call is filled in only when
-    -- missing rather than replacing the table (which would drop the client's).
-    C_Timer = C_Timer or {}
+    -- This client carries its own C_Timer; every member is added only when
+    -- missing, and the global itself is written only when absent. A write to
+    -- a name the client already has taints that name for the session, and
+    -- Blizzard code reading it then fails in a secure context (taint.log,
+    -- 21 Nov 2026: the UseAction report; PORT.md rule 22).
+    if not C_Timer then C_Timer = {} end
     -- Retail: one callback after the delay; the handle's :Cancel() works.
-    C_Timer.After = C_Timer.After or function(delay, fn)
-        return Add(fn, delay, 1, false)
+    if not C_Timer.After then
+        C_Timer.After = function(delay, fn)
+            return Add(fn, delay, 1, false)
+        end
     end
     -- Retail: callback "iterations" times (one by default), each a "delay"
     -- apart on the same clock.
-    C_Timer.NewTimer = C_Timer.NewTimer or function(delay, fn, iterations)
-        return Add(fn, delay, iterations, true)
+    if not C_Timer.NewTimer then
+        C_Timer.NewTimer = function(delay, fn, iterations)
+            return Add(fn, delay, iterations, true)
+        end
     end
     -- Retail: repeats until :Cancel() (or "iterations" times).
-    C_Timer.NewTicker = C_Timer.NewTicker or function(delay, fn, iterations)
-        return Add(fn, delay, iterations, true)
+    if not C_Timer.NewTicker then
+        C_Timer.NewTicker = function(delay, fn, iterations)
+            return Add(fn, delay, iterations, true)
+        end
     end
 end
 

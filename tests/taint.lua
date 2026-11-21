@@ -13,9 +13,27 @@ local Section, Check, Eq = T.Section, T.Check, T.Eq
 local NAMES = {
     "CreateFrame", "CreateFont", "SetMapByID", "SetMapToCurrentZone",
     "GetCurrentMapAreaID", "GetLocale", "SetBinding", "GetGuildInfo",
+    -- The compat layer used to write "X = X or <fill-in>" over these, which
+    -- reassigns the name even when the value is the same and taints it.
+    "UnitFullName", "GetNumGroupMembers", "GetItemInfoInstant", "C_Timer", "C_Map",
 }
 local client = {}
 for _, name in ipairs(NAMES) do client[name] = rawget(_G, name) end
+
+-- Members of the client's tables, captured the same way: a fill-in written as
+-- "C_Timer.After = C_Timer.After or f" replaces the client's own member and
+-- taints it just the same.
+local MEMBERS = {
+    { "C_Timer", "After" },
+    { "C_Timer", "NewTimer" },
+    { "C_Timer", "NewTicker" },
+    { "C_Map", "GetBestMapForUnit" },
+}
+local clientMembers = {}
+for _, entry in ipairs(MEMBERS) do
+    local table_ = client[entry[1]]
+    clientMembers[#clientMembers + 1] = { entry[1], entry[2], type(table_) == "table" and table_[entry[2]] or nil }
+end
 
 local ns = T.Load()
 
@@ -27,6 +45,20 @@ for _, name in ipairs(NAMES) do
            name .. " is not the client's own function any more: a reassigned global is tainted, and so is everything the client's secure code builds through it")
     end
 end
+
+Section("nor a member of a table the client owns")
+
+local checkedMembers = 0
+for _, entry in ipairs(clientMembers) do
+    local owner, member, before = entry[1], entry[2], entry[3]
+    local table_ = rawget(_G, owner)
+    if before ~= nil and type(table_) == "table" then
+        checkedMembers = checkedMembers + 1
+        Eq(table_[member], before,
+           owner .. "." .. member .. " is not the client's own any more: writing it, even with the same value, taints it for the session (PORT.md rule 22)")
+    end
+end
+Check(checkedMembers >= 2, "the mock no longer models a client table member, so this test proves nothing")
 
 Section("the retail backdrop template is asked about, not assumed")
 

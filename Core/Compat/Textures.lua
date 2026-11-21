@@ -42,7 +42,7 @@ end)
 
 -- A bare global of the same name, because some call sites read it as a
 -- function rather than as a widget method (audit R1 counts it as a name).
-GetAtlasInfo = GetAtlasInfo or function() return nil end
+if not GetAtlasInfo then GetAtlasInfo = function() return nil end end
 
 if not C_Texture then
     C_Texture = {
