@@ -127,6 +127,7 @@ local FILES = {
     "fonts",
     "locale",
     "areas",
+    "dbc_names",
     "taint",
 }
 

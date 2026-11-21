@@ -126,7 +126,7 @@
     东部王国整块图叫 `Azeroth`）在 `Locales/zhCN/Names.lua` 补别名，别改 raw 值。测试的 mock 也照这个偏移建模
     （`tests/wowmock.lua` 的 `SetMapByID` 与 `SetMapToCurrentZone`），否则 shim 与 mock 会互相"证明"错的语义。
 18. **区域名不够用时，从客户端自己的 DBC 取，别手抄**：本机客户端是 `locale=enUS`，`GetRealZoneText`、子区域名、
-    `C_Map.GetMapInfo` 给的全是英文；`Locales/zhCN/Names.lua` 手写了 229 条（大陆、城市、副本、战场、职业），
+    `C_Map.GetMapInfo` 给的全是英文；`Locales/zhCN/Names.lua` 手写了 244 条（大陆、城市、副本、战场、职业），
     覆盖不到两千多条区域 / 子区域名。`Locales/zhCN/Areas.lua` 由 `tools/dbc_areas.py` 生成：读
     `Data\patch-AAS.mpq` 里的 `DBFilesClient\AreaTable.dbc`（WDBC 格式，2307 行 / 36 字段；名字是 16 语种块，
     从记录的字段 idx 11 起，**块内第 5 列就是简体中文**），得到 2105 条「英文 → 中文」，写进与手写表**同一张**
@@ -142,6 +142,21 @@
     （`pcall(CreateFrame, "Frame", nil, UIParent, "BackdropTemplate")` 成功才给字符串，3.3.5 给 nil），
     `UI/Kit/Chrome.lua` 只在拿到值时才把这个 token 传给 `CreateFrame`（3.3.5 的 Frame 本来就能直接 `SetBackdrop`）。
     要给客户端已有的表补东西，按硬性规则 9 只补缺失成员，绝不整表替换。
+20. **中文名的权威来源是客户端自己的 DBC：`Data\patch-ZH.mpq` 把名字列直接写成了简体中文**。
+    本机客户端装了两份同名表——`patch-M.mpq` 是英文，`patch-ZH.mpq` 后加载（优先级更高）而它改写
+    `DBFilesClient`，把同一个名字列换成了中文：`ChrClasses.dbc` 第 4 列、`ChrRaces.dbc` 第 14 列、
+    `Map.dbc` 第 5 列、`AreaTable.dbc` 第 11 列、`BattlemasterList.dbc` 第 11 列（`Faction` 第 23 列、
+    `SkillLine` 第 3 列同理）。所以「DBC 的 zhCN 列是空的、没有权威中文」是**旧结论，已作废**：
+    职业、种族、地图、副本、战场、竞技场名一律从客户端抄，不自己编译名、不等社区译名。
+    落地：`Capture/CoA.lua` 的 `CoA.classes`（32 职业）与 `CoA.races`（42 行，含 51-63 的 NPC 重复行）
+    带 `src = "client-dbc"`，`CoA.RaceName(name, id)` 供显示用；`Locales/zhCN/Maps.lua` 由
+    `tools/dbc_maps.py` 从 `Map.dbc` + `BattlemasterList.dbc` 生成 348 条名字与 353 个 map id。
+    合并一律 `or`（手写表优先）：客户端个别译名比官方差（`Map.dbc` 229 写作「黑石山」，我们保留
+    「黑石塔」；607「先祖海滩」vs「远古海滩」），这类以手写表为准。`AreaTable.dbc` 两份补丁的中文
+    **逐条相同**（2105 条 diff = 0），所以 `Locales/zhCN/Areas.lua` 不用重生成。
+    重新生成：`py -3 -B tools\dbc_maps.py`；改译名改生成器的过滤而不是改产物。
+    测试见 `tests/dbc_names.lua`（职业/种族/竞技场/场内名与 id 表、手写优先、翼名拼装）与 `tests/areas.lua`
+    （`CoA.todoNames` 现在只剩客户端 DBC 也没有的 4 条，且每条必须确实没有中文）。
 ## 3. 兼容层契约（`Core/Compat/`，owner: core-port）
 
 每个文件在 TOC 里紧跟 `Core/Addon.lua` 之后、`Locales/` 之前加载。**按成员补齐，不做整表 guard**（硬性规则 9）：

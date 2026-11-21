@@ -18,11 +18,11 @@
 
 ## 二、显示期接入点清单：把客户端给的英文名换成中文
 
-**为什么需要这一节**：CoA 客户端的语言是 enUS（`WTF\Config.wtf` 里 `SET locale "enUS"`），所以 `GetRealZoneText` / `GetZoneText` / `C_Map.GetMapInfo().name` / `GetInstanceInfo` / `UnitClass` / 战场名一律返回英文。插件自己的 UI 文案已经 `L[…]\` 化了，但**名字**不是文案，翻不了——只能在**显示的那一刻**查表。
+**为什么需要这一节**：CoA 客户端的语言是 enUS（`WTF\Config.wtf` 里 `SET locale "enUS"`），所以 `GetRealZoneText` / `GetZoneText` / `C_Map.GetMapInfo().name` / `GetInstanceInfo` / `UnitClass` / 战场名返回的是客户端表里的**英文列**。注意：客户端另装了 `Data\patch-ZH.mpq`，它把 DBC 的名字列本身改写成了简体中文（见 2.3），所以「看起来是英文」只说明我们读到的是 enUS 那份，不说明客户端没有中文名。插件自己的 UI 文案已经 `L[…]\` 化了，但**名字**不是文案，翻不了——只能在**显示的那一刻**查表。
 
 **原则（lead 定，别破坏）**：存档里永远留客户端给的英文原名（区域身份、地图 id、职业 token 都是客户端数据）；`ns.CoA.zhName(x)` **只用于显示**，不得用于写存档、比较、索引。它不是 `nil` 安全就够，还要求「查不到原样返回」。
 
-数据在哪：`Locales/zhCN/Names.lua`（229 条英文→中文，含大陆/城市/经典与 TBC·WotLK 副本团队/战场竞技场/区域/32 职业；反向表 `ns.CoA.enNames` 中文→英文；`CoA.todoNames` 是**故意留英文**的 118 条 CoA 自创名）。API：`ns.CoA.zhName(text)`、`ns.CoA.enName(text)`（`ns.CoA` 由 Capture/CoA.lua 归 features-port；同一份也在 `ns.Locale.CoA`，UI 若担心加载顺序可以读后者）。
+数据在哪：三张表合并成同一张 `CoA.zhNames`（共 2,410 条，`or` 合并、手写优先）——`Locales/zhCN/Names.lua` 手写 244 条（大陆/城市/经典与 TBC·WotLK 副本团队/战场竞技场/翼名/32 职业），`Locales/zhCN/Areas.lua` 2,105 条区域名（生成器 `tools/dbc_areas.py`），`Locales/zhCN/Maps.lua` 348 条 Map.dbc + BattlemasterList.dbc 的名字外加 353 个 map id（生成器 `tools/dbc_maps.py`）。反向表 `ns.CoA.enNames` 中文→英文；`CoA.todoNames` 只剩客户端 DBC 也查不到的 **4 条**。API：`ns.CoA.zhName(text)`、`ns.CoA.enName(text)`（`ns.CoA` 由 Capture/CoA.lua 归 features-port；同一份也在 `ns.Locale.CoA`，UI 若担心加载顺序可以读后者）。
 
 ### 2.1 已经统一的：不用再改
 
@@ -35,7 +35,7 @@
 
 所以 toast、卡片正文、旅程散文里的「in Stormwind City」已经是「在暴风城」。
 
-**落地状态（2026-11-19）**：`Locales/zhCN/CoA.lua` 与 `Locales/zhCN/Names.lua` 已进 TOC（`social_diary.toc:93`、`:94`，都在 Locales 段末尾、早于 Capture/）；features-port 在 `Capture/CoA.lua` 末尾把 `zhNames`/`zhName`/`enName`/`todoNames` 重新挂回 `ns.CoA`（否则该文件的 `ns.CoA = CoA` 会覆盖镜像），32 个职业与 15 条战场/竞技场的 `zh` 已填。整机启动探针（`tests/wowmock.lua` 的 `LoadAddon` 按 TOC 全量加载 + `ADDON_LOADED`/`PLAYER_LOGIN`，不写存档）验证：`Locale.id == "zhCN"`、`ns.CoA.zhName("Stormwind City") == "暴风城"`、`ns.CoA.Name(ns.CoA.classes[1]) == "战士"`、`ns.ZoneIn(nil,"Elwynn Forest") == "在艾尔文森林"`、`ns.DungeonIn` 与未知名原样返回均正确。**不要在 Core 里改 `ns.Where`/`ns.MapName`/`ns.RowZone` 去翻**——那是存档与比较用的 raw 值（`Core/Sightings.lua:54` 的 `row.zone == where.zone` 靠它）。
+**落地状态（2026-11-21 更新）**：`Locales/zhCN/{CoA,Names,Areas,Maps}.lua` 都在 TOC 的 Locales 段（`:93`、`:94`、`:111`、`:112`，早于 Capture/）；features-port 在 `Capture/CoA.lua` 末尾把 `zhNames`/`zhName`/`enName`/`todoNames`/`maps`/`Map` 重新挂回 `ns.CoA`（否则该文件的 `ns.CoA = CoA` 会覆盖镜像），32 个职业的 `zh`、42 行种族的 `zh`、55 条战场/竞技场的 `zh` 全部来自客户端 DBC。整机启动探针（`tests/wowmock.lua` 的 `LoadAddon` 按 TOC 全量加载 + `ADDON_LOADED`/`PLAYER_LOGIN`，不写存档）验证：`Locale.id == "zhCN"`、`ns.CoA.zhName("Stormwind City") == "暴风城"`、`ns.CoA.Name(ns.CoA.classes[1]) == "战士"`、`ns.ZoneIn(nil,"Elwynn Forest") == "在艾尔文森林"`、`ns.DungeonIn` 与未知名原样返回均正确。**不要在 Core 里改 `ns.Where`/`ns.MapName`/`ns.RowZone` 去翻**——那是存档与比较用的 raw 值（`Core/Sightings.lua:54` 的 `row.zone == where.zone` 靠它）。
 
 ### 2.2 显示点（下表是当初的派单，**19 日已全部落地**，实际形态见表下「落地记录」）
 
@@ -70,10 +70,11 @@
 
 ### 2.3 还没数据、翻不了（要保持英文，别硬造）
 
-- **种族名**：`UI/Words/Format.lua:352` 的 `RACE_NAMES[record.race]`，以及 `GetRace`/`UnitRace` 的返回值。**已定：保留英文**。理由：`ChrRaces.dbc` 有 42 行（经典 10 个 + CoA 自创 32 个），而客户端只装了 enUS 的表（`WTF\Config.wtf` 里 `SET locale "enUS"`，DBC 没有中文列）；自创种族没有任何官方中文名，经典 10 个虽有通行译名，但在客户端里核不到权威来源。按 lead 的规则「查不到就标 TODO，不许编」，这里不落盘。将来若能在客户端 GlobalStrings 或中文 DBC 里核到，再做成 `Locales/zhCN/Names.lua` 的表。
-- **子区域名**（`GetSubZoneText`：Goldshire、Razor Hill…）：**已铺** —— `Locales/zhCN/Areas.lua` 由 `tools/dbc_areas.py` 从客户端 `patch-AAS.mpq` 的 `AreaTable.dbc`（2307 行，16 语种块，块内第 5 列是简体中文）生成 2,105 条英中对照，写进同一张 `CoA.zhNames`（手写词条优先），`ns.ZoneIn(nil, subZone)` / `ZoneShown` 因此都能查到；DBC 里的间隔号换成空格。测试 `tests/areas.lua`。
-- **天赋/专精名**（`ChrSpecs.dbc` 无名字段）、**物品名**（`GetItemInfo` 的 link 名）、**任务名**（`Features/QuestFinales/Data.lua` 97 条 title）、**NPC/生物名**（`Core/Pace/*.lua` 978 条）、**CoA 自创副本/战场/区域**（`CoA.todoNames` 118 条）——都是客户端数据，没有权威中文来源；按 lead 的规则**保留英文**，等社区译名。
-- `Capture/CoA.lua` 的 `CoA.dungeons` 仍是空表（features-port 说 CoA 没有权威副本清单），所以 `ns.CoA.dungeons` 没有任何条目。
+- **种族名**：**已解决**（原先「DBC 没有中文列」的判断是错的）。`Data\patch-ZH.mpq` 的 `ChrRaces.dbc` 第 14 列就是简体中文，42 行全有名字：`Capture/CoA.lua` 的 `CoA.races` 逐行抄（`src = "client-dbc"`，含 51-63 的 NPC 重复行），显示走 `CoA.RaceName(name, id)`（`UI/Words/Format.lua` 的 `Format.RaceName` 第一优先，`UI/Journey/Text/Match.lua` 的战场页也走它），查不到返回原值；`UI/Words/Format.lua` 的 `RACE_NAMES` 只剩 `Scourge`/`NightElf` 两条兜底。测试见 `tests/dbc_names.lua`。
+- **子区域名**（`GetSubZoneText`：Goldshire、Razor Hill…）：**已铺** —— `Locales/zhCN/Areas.lua` 由 `tools/dbc_areas.py` 从客户端 `patch-AAS.mpq` 的 `AreaTable.dbc`（2307 行，16 语种块，块内第 5 列是简体中文）生成 2,105 条英中对照，写进同一张 `CoA.zhNames`（手写词条优先），`ns.ZoneIn(nil, subZone)` / `ZoneShown` 因此都能查到；DBC 里的间隔号换成空格。`patch-ZH.mpq` 的同表中文与 `patch-AAS.mpq` **逐条相同**（2,105 条 diff = 0），所以不用换源重生成。测试 `tests/areas.lua`。
+- **CoA 自创副本/战场/区域**：**已解决**。`Locales/zhCN/Maps.lua` 由 `tools/dbc_maps.py` 从客户端 `Map.dbc`（第 5 列）+ `BattlemasterList.dbc`（第 11 列）生成 348 条名字 / 353 个 id，全部是 `patch-ZH.mpq` 里的原文（例：`Maldraxxus Coliseum` → 玛卓克萨斯竞技场、`FFA BG` → 自由混战战场、`The Tiger's Peak` → 虎踞峰）。`CoA.todoNames` 从 118 条缩到 4 条（`Vaults of Inquisition`、`Druk'Thar`、`Skywall`、占位串 `InstanceName`），`tests/areas.lua` 会断言剩下的每条确实查不到中文。
+- **天赋/专精名**（`ChrSpecs.dbc` 无名字段）、**物品名**（`GetItemInfo` 的 link 名）、**任务名**（`Features/QuestFinales/Data.lua` 97 条 title）、**NPC/生物名**（`Core/Pace/*.lua` 978 条）——这些表没有名字列或没有中文列，仍按 lead 的规则**保留英文**。
+- `Capture/CoA.lua` 的 `CoA.dungeons` 有 103 行（经典/资料片副本团队 + CoA 自创，`src` 标 `client-dbc` 或 `server-sql`）；行内**不存**名字的中文，显示时由 `CoA.Name(row)` 惰性查 `CoA.zhName(name)`，所以客户端 DBC 里有的名字自动中文、没有的仍英文。
 
 ---
 

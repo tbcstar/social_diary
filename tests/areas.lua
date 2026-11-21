@@ -26,7 +26,14 @@ Eq(CoA.enName("黑水湾"), "Blackwater Cove", "the reverse table has no entry")
 Section("the hand-written table still wins")
 
 Eq(CoA.zhName("Stormwind City"), "暴风城", "a curated name was overwritten by the generated one")
-Check(CoA.todoNames and #CoA.todoNames > 50, "the list of names left in English is gone")
+-- Names even the client's own DBCs cannot supply (see tests/dbc_names.lua for
+-- the ones they can). The list is a handful now, and every name still in it must
+-- really be untranslated: a translated name here means a lookup we forgot.
+Check(CoA.todoNames and #CoA.todoNames < 10,
+      "the list of names left in English grew back: " .. tostring(CoA.todoNames and #CoA.todoNames))
+for _, name in ipairs(CoA.todoNames or {}) do
+    Eq(CoA.zhName(name), name, "a name listed as English is actually translated: " .. name)
+end
 
 Section("the whole area table is in")
 

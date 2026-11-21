@@ -70,10 +70,14 @@ python tools/coa_pack.py --info     # 只对照本插件与客户端已装插件
 - **地名、副本名、职业名是“显示期翻译”**：手账里显示中文（含 32 个 CoA 职业
   的中文名），存档、比较、索引仍用客户端英文原名与职业 token，因此换语言或换
   客户端不会串数据；英文客户端下这些名字仍是英文。
-- CoA 自创内容（部分职业、自创副本与区域、42 个种族）没有官方中文来源，按“查
-  不到就留英文、不臆造”的原则处理；完整清单与理由见
-  [i18n-gaps.md](docs/coa-port/i18n-gaps.md)（不打进发布包，避免把开发文档
-  塞进发布目录）。
+- **中文名不靠猜，抄客户端自己的表**：CoA 客户端装了 `Data\patch-ZH.mpq`，它把
+  DBC 的名字列本身改写成了简体中文。所以 `Locales/zhCN/Maps.lua`（`tools/dbc_maps.py`
+  生成）逐条抄 `Map.dbc` / `BattlemasterList.dbc` 的 348 个名字（副本、战场、竞技场、
+  CoA 自创区域），`Locales/zhCN/Areas.lua` 抄 `AreaTable.dbc` 的 2,105 个区域名；
+  32 个职业名与 42 行种族名照抄 `ChrClasses.dbc` / `ChrRaces.dbc`。手写表优先，
+  个别客户端写法与官方译名不同时（如它把 229 写作「黑石山」）保留「黑石塔」。
+  仍留英文的只有客户端表里也没有名字的（天赋、物品、任务、NPC 名），取舍见
+  [i18n-gaps.md](docs/coa-port/i18n-gaps.md)（不打进发布包，避免把开发文档塞进发布目录）。
 
 ## CoA 适配：哪些能用，哪些降级
 

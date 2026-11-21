@@ -351,47 +351,19 @@ function CoA.enName(text)
     return CoA.enNames[text] or text
 end
 
--- 已知没有中文来源的名字。**故意不翻**：CoA 自创内容（mob/地图名）没有官方
--- zhCN 词条，社区译名也没定下来；按 lead 的要求宁可在 UI 里显示英文，
--- 也不自己造译名。等社区有了通用叫法再往上面的表里加。
+-- 已知没有中文来源的名字。**故意不翻**：只留客户端 DBC 也查不到的少数几个。
+--
+-- 更正（2026-11-21）：客户端 Data\patch-ZH.mpq 把 Map.dbc 与 BattlemasterList.dbc
+-- 的名字列写成了简体中文，所以 CoA 自创的副本、战场、竞技场、地图名现在都从
+-- 客户端抄（Locales/zhCN/Maps.lua，生成器 tools/dbc_maps.py），不再自己造译名。
+-- 这里只剩 DBC 里也没有的：服务端 SQL 独有的副本名、对不上 DBC 的拼写与占位串。
 CoA.todoNames = {
-    -- 竞技场
-    "Coliseum of Past Echoes Arena", "Maldraxxus Coliseum", "Nagrand Arena HD",
-    "Blade's Edge Arena HD", "Imperial Arena of Thakraj", "The Tiger's Peak",
-    "The Inventor's Library", "Amphitheater of Anguish", "Tol'viron Arena",
-    "Ashamane's Fall", "Baradin Hold Arena", "Obelisk of the Stars",
-    "Guardian's Hall", "Spark of Creator", "The Twisting Nether",
-    -- 战场
-    "FFA BG", "Manastorm Brawl", "Arathi Basin (Winter)", "Warsong Gulch (Winter)",
-    "Arathi Basin (HD)", "Warsong Gulch (HD)", "Southshore vs. Tarren Mill",
-    "Assault on Alcaz", "Alterac Attack", "Andorhal Assault", "The War of Zin-Malor",
-    "The Battle of Bladespire Hold", "The Battle of Booty Bay",
-    "Skirmish in the Steppes", "Clash in The Cauldron", "Deatholme Deathmatch",
-    "Battle of Dire Maul", "Siege of Sardor Isle", "Frostwhisper Fallout",
-    "Silverpine Showdown", "Battle for Nagrand", "Hellfire Havoc",
-    "War of The World Tree", "Airstrip Assault", "Bloodshed in The Barrens",
-    "Battle of North Gate Pass", "Excavation of Ahn'Qiraj",
-    "Stonewatch Slaughter", "Slaughter in Stromgarde", "Battle for Theramore",
-    "Trouble in Tor'Watha", "Carnage in the Crater", "Warsong Lumber War",
-    "War of Windshear Crag", "Zanza's Isle", "Akhen City Ruins",
-    -- 自创地图/副本
-    "Frozen Tears Sanctum", "Tinkertech Showdown", "Helya Revenge", "Mini Games",
-    "Ocean Battle", "Ocean Battle 2", "The Abbys", "Shaded Echo Tavern",
-    "Stormwind Sewer Room", "Stormwind Sewer", "Stormwind Prison",
-    "Orgrimmar Depths", "Grizlo's Brawlers Guild", "Brawl'gar Arena", "The Crucible",
-    "The Crucible (Staging)", "The Grim Marsh", "Eonar's Cradle", "Iskarr Village",
-    "Vardrheim", "Shadow Hold", "Jintha'Alor", "Forgotten Mine", "Karazhan Crypts",
-    "Isle of Kings", "TorWatha", "Tor'Watha", "Aspects Trials", "Underworld",
-    "Azzar Faire", "Harvest Island", "Fading Island", "Regret's Chasm",
-    "Depthbreaker's Hollow", "Ortus Mallum", "Blacklineage", "Mish Faramos",
-    "Snowgrave (PvE)", "Atal'zull (PvE)", "Setis (PvE)", "Azuregos (PvE)",
-    "Lord Kazzak (PvE)", "Emeriss (PvE)", "Taerar (PvE)", "Lethon (PvE)",
-    "Soggoth (PvE)", "Ysondre (PvE)", "Kaldros Depthbreaker (PvE)", "Druk'Thar",
-    "The Robodrome", "CoA PvP", "Lordaeron", "Haunted Valley", "Newnerub",
-    "Future Northrend", "Frozen Reach", "Siltithus Setis", "Darkwhisper Gorge",
-    "Vaults of the Inquisition", "Vaults of Inquisition", "Road to De Other Side", "Azga Necromancer Dungeon",
-    "Vulture Cult Sanctuary Dungeon", "Shadow Bone Depths", "Temple Of Embers",
-    "Skywall", "MageArtifact", "InstanceName",
+    -- 服务端 SQL 有、客户端 DBC 里没有
+    "Vaults of Inquisition",
+    -- 客户端也没有中文列的
+    "Druk'Thar", "Skywall",
+    -- 占位串（不是地图名）
+    "InstanceName",
 }
 
 -- 让 UI 侧也能直接拿：ns.CoA 是 features-port 的主源，这里只挂显示用的名字，

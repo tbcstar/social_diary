@@ -64,7 +64,7 @@ CoA.classes = {
   [1] = { id = 1, name = 'Warrior', token = 'WARRIOR', resource = 1, zh = '战士', src = "client-dbc" },
   [2] = { id = 2, name = 'Paladin', token = 'PALADIN', resource = 0, zh = '圣骑士', src = "client-dbc" },
   [3] = { id = 3, name = 'Hunter', token = 'HUNTER', resource = 0, zh = '猎人', src = "client-dbc" },
-  [4] = { id = 4, name = 'Rogue', token = 'ROGUE', resource = 3, zh = '潜行者', src = "client-dbc" },
+  [4] = { id = 4, name = 'Rogue', token = 'ROGUE', resource = 3, zh = '盗贼', src = "client-dbc" },
   [5] = { id = 5, name = 'Priest', token = 'PRIEST', resource = 0, zh = '牧师', src = "client-dbc" },
   [6] = { id = 6, name = 'Death Knight', token = 'DEATHKNIGHT', resource = 6, zh = '死亡骑士', src = "client-dbc" },
   [7] = { id = 7, name = 'Shaman', token = 'SHAMAN', resource = 0, zh = '萨满祭司', src = "client-dbc" },
@@ -74,25 +74,79 @@ CoA.classes = {
   [11] = { id = 11, name = 'Druid', token = 'DRUID', resource = 0, zh = '德鲁伊', src = "client-dbc" },
   [12] = { id = 12, name = 'Barbarian', token = 'BARBARIAN', resource = 3, zh = '野蛮人', src = "client-dbc" },
   [13] = { id = 13, name = 'Witch Doctor', token = 'WITCHDOCTOR', resource = 0, zh = '巫医', src = "client-dbc" },
-  [14] = { id = 14, name = 'Felsworn', token = 'DEMONHUNTER', resource = 3, zh = '魔誓者', src = "client-dbc" },
-  [15] = { id = 15, name = 'Witch Hunter', token = 'WITCHHUNTER', resource = 0, zh = '猎巫人', src = "client-dbc" },
+  [14] = { id = 14, name = 'Felsworn', token = 'DEMONHUNTER', resource = 3, zh = '恶魔猎手', src = "client-dbc" },
+  [15] = { id = 15, name = 'Witch Hunter', token = 'WITCHHUNTER', resource = 0, zh = '猎魔人', src = "client-dbc" },
   [16] = { id = 16, name = 'Stormbringer', token = 'STORMBRINGER', resource = 0, zh = '风暴使者', src = "client-dbc" },
-  [17] = { id = 17, name = 'Knight of Xoroth', token = 'FLESHWARDEN', resource = 1, zh = '克索罗斯骑士', src = "client-dbc" },
-  [18] = { id = 18, name = 'Guardian', token = 'GUARDIAN', resource = 3, zh = '守卫者', src = "client-dbc" },
-  [19] = { id = 19, name = 'Templar', token = 'MONK', resource = 3, zh = '圣堂武士', src = "client-dbc" },
+  [17] = { id = 17, name = 'Knight of Xoroth', token = 'FLESHWARDEN', resource = 1, zh = '克索诺斯骑士', src = "client-dbc" },
+  [18] = { id = 18, name = 'Guardian', token = 'GUARDIAN', resource = 3, zh = '守护者', src = "client-dbc" },
+  [19] = { id = 19, name = 'Templar', token = 'MONK', resource = 3, zh = '圣殿骑士', src = "client-dbc" },
   [20] = { id = 20, name = 'Bloodmage', token = 'SONOFARUGAL', resource = 1, zh = '血法师', src = "client-dbc" },
   [21] = { id = 21, name = 'Ranger', token = 'RANGER', resource = 2, zh = '游侠', src = "client-dbc" },
-  [22] = { id = 22, name = 'Chronomancer', token = 'CHRONOMANCER', resource = 0, zh = '时空法师', src = "client-dbc" },
-  [23] = { id = 23, name = 'Necromancer', token = 'NECROMANCER', resource = 6, zh = '死灵法师', src = "client-dbc" },
-  [24] = { id = 24, name = 'Pyromancer', token = 'PYROMANCER', resource = 0, zh = '火法师', src = "client-dbc" },
+  [22] = { id = 22, name = 'Chronomancer', token = 'CHRONOMANCER', resource = 0, zh = '时光术师', src = "client-dbc" },
+  [23] = { id = 23, name = 'Necromancer', token = 'NECROMANCER', resource = 6, zh = '亡灵巫师', src = "client-dbc" },
+  [24] = { id = 24, name = 'Pyromancer', token = 'PYROMANCER', resource = 0, zh = '炎术师', src = "client-dbc" },
   [25] = { id = 25, name = 'Cultist', token = 'CULTIST', resource = 0, zh = '邪教徒', src = "client-dbc" },
   [26] = { id = 26, name = 'Starcaller', token = 'STARCALLER', resource = 3, zh = '唤星者', src = "client-dbc" },
-  [27] = { id = 27, name = 'Sun Cleric', token = 'SUNCLERIC', resource = 0, zh = '太阳牧师', src = "client-dbc" },
-  [28] = { id = 28, name = 'Tinker', token = 'TINKER', resource = 0, zh = '机械师', src = "client-dbc" },
-  [29] = { id = 29, name = 'Venomancer', token = 'PROPHET', resource = 0, zh = '毒术师', src = "client-dbc" },
-  [30] = { id = 30, name = 'Reaper', token = 'REAPER', resource = 6, zh = '收割者', src = "client-dbc" },
-  [31] = { id = 31, name = 'Primalist', token = 'WILDWALKER', resource = 0, zh = '原初者', src = "client-dbc" },
-  [32] = { id = 32, name = 'Runemaster', token = 'SPIRITMAGE', resource = 0, zh = '符文师', src = "client-dbc" },
+  [27] = { id = 27, name = 'Sun Cleric', token = 'SUNCLERIC', resource = 0, zh = '太阳祭司', src = "client-dbc" },
+  [28] = { id = 28, name = 'Tinker', token = 'TINKER', resource = 0, zh = '工匠', src = "client-dbc" },
+  [29] = { id = 29, name = 'Venomancer', token = 'PROPHET', resource = 0, zh = '剧毒术士', src = "client-dbc" },
+  [30] = { id = 30, name = 'Reaper', token = 'REAPER', resource = 6, zh = '死神', src = "client-dbc" },
+  [31] = { id = 31, name = 'Primalist', token = 'WILDWALKER', resource = 0, zh = '仪祭师', src = "client-dbc" },
+  [32] = { id = 32, name = 'Runemaster', token = 'SPIRITMAGE', resource = 0, zh = '符文大师', src = "client-dbc" },
+}
+
+--[[---------------------------------------------------------------------------
+  Races. Source: client DBC ChrRaces (RaceID, token, English name, zh), read
+  from Data/patch-ZH.mpq: that patch rewrites DBFilesClient and puts Chinese in
+  the DBC name column itself, so these are the names the client would draw, not
+  a translation of ours. Rows 51-63 are the NPC duplicates CoA keeps next to the
+  playable races; UnitRace can return them and they cost nothing.
+  Display only: a diary record keeps the client English race and its id, like
+  every other client string.
+---------------------------------------------------------------------------]]--
+CoA.races = {
+  [1] = { id = 1, token = "Human", name = "Human", zh = "人类", src = "client-dbc" },
+  [2] = { id = 2, token = "Orc", name = "Orc", zh = "兽人", src = "client-dbc" },
+  [3] = { id = 3, token = "Dwarf", name = "Dwarf", zh = "矮人", src = "client-dbc" },
+  [4] = { id = 4, token = "NightElf", name = "Night Elf", zh = "暗夜精灵", src = "client-dbc" },
+  [5] = { id = 5, token = "Scourge", name = "Undead", zh = "亡灵", src = "client-dbc" },
+  [6] = { id = 6, token = "Tauren", name = "Tauren", zh = "牛头人", src = "client-dbc" },
+  [7] = { id = 7, token = "Gnome", name = "Gnome", zh = "侏儒", src = "client-dbc" },
+  [8] = { id = 8, token = "Troll", name = "Troll", zh = "巨魔", src = "client-dbc" },
+  [9] = { id = 9, token = "Goblin", name = "Goblin", zh = "地精", src = "client-dbc" },
+  [10] = { id = 10, token = "BloodElf", name = "Blood Elf", zh = "血精灵", src = "client-dbc" },
+  [11] = { id = 11, token = "Draenei", name = "Draenei", zh = "德莱尼人", src = "client-dbc" },
+  [12] = { id = 12, token = "Zandalari Troll", name = "Zandalari Troll", zh = "赞达拉巨魔", src = "client-dbc" },
+  [13] = { id = 13, token = "Worgen", name = "Worgen", zh = "狼人", src = "client-dbc" },
+  [16] = { id = 16, token = "KulTiran", name = "Kul Tiran", zh = "库尔提拉斯人", src = "client-dbc" },
+  [19] = { id = 19, token = "Vulpera", name = "Vulpera", zh = "狐人", src = "client-dbc" },
+  [20] = { id = 20, token = "Pandaren", name = "Pandaren", zh = "熊猫人", src = "client-dbc" },
+  [33] = { id = 33, token = "ThinHuman", name = "Thin Human", zh = "库尔提拉斯人", src = "client-dbc" },
+  [34] = { id = 34, token = "FelOrc", name = "Fel Orc", zh = "邪兽人", src = "client-dbc" },
+  [35] = { id = 35, token = "Naga_", name = "Naga", zh = "纳迦", src = "client-dbc" },
+  [36] = { id = 36, token = "Broken", name = "Broken", zh = "破碎者", src = "client-dbc" },
+  [37] = { id = 37, token = "Skeleton", name = "Skeleton", zh = "骷髅", src = "client-dbc" },
+  [38] = { id = 38, token = "Vrykul", name = "Vrykul", zh = "维库人", src = "client-dbc" },
+  [39] = { id = 39, token = "Tuskarr", name = "Tuskarr", zh = "海象人", src = "client-dbc" },
+  [40] = { id = 40, token = "ForestTroll", name = "Forest Troll", zh = "森林巨魔", src = "client-dbc" },
+  [41] = { id = 41, token = "Taunka", name = "Taunka", zh = "牦牛人", src = "client-dbc" },
+  [42] = { id = 42, token = "NorthrendSkeleton", name = "Northrend Skeleton", zh = "诺森德骷髅", src = "client-dbc" },
+  [43] = { id = 43, token = "IceTroll", name = "Ice Troll", zh = "冰雪巨魔", src = "client-dbc" },
+  [44] = { id = 44, token = "DrakkariTroll", name = "Drakkari Troll", zh = "达卡莱巨魔", src = "client-dbc" },
+  [45] = { id = 45, token = "LeperTroll", name = "Leper Troll", zh = "麻风巨魔", src = "client-dbc" },
+  [46] = { id = 46, token = "Troglodyte", name = "Troglodyte", zh = "穴居人", src = "client-dbc" },
+  [51] = { id = 51, token = "Human2", name = "Human", zh = "人类", src = "client-dbc" },
+  [52] = { id = 52, token = "Orc2", name = "Orc", zh = "兽人", src = "client-dbc" },
+  [53] = { id = 53, token = "Dwarf2", name = "Dwarf", zh = "矮人", src = "client-dbc" },
+  [54] = { id = 54, token = "NightElf2", name = "Night Elf", zh = "暗夜精灵", src = "client-dbc" },
+  [55] = { id = 55, token = "Scourge2", name = "Undead", zh = "亡灵", src = "client-dbc" },
+  [56] = { id = 56, token = "Tauren2", name = "Tauren", zh = "牛头人", src = "client-dbc" },
+  [57] = { id = 57, token = "Gnome2", name = "Gnome", zh = "侏儒", src = "client-dbc" },
+  [58] = { id = 58, token = "Troll2", name = "Troll", zh = "巨魔语", src = "client-dbc" },
+  [60] = { id = 60, token = "BloodElf2", name = "Blood Elf", zh = "血精灵", src = "client-dbc" },
+  [61] = { id = 61, token = "Draenei2", name = "Draenei", zh = "德莱尼人", src = "client-dbc" },
+  [62] = { id = 62, token = "Npc_Earthen", name = "Earthen", zh = "土灵", src = "client-dbc" },
+  [63] = { id = 63, token = "Npc_HumanCultist", name = "Human Cultit", zh = "人类教徒", src = "client-dbc" },
 }
 
 --[[---------------------------------------------------------------------------
@@ -384,10 +438,11 @@ function CoA.Name(entry)
     return (CoA.zhName and CoA.zhName(entry)) or entry
   end
   if kind ~= "table" then return entry end
-  -- A row's own `zh` is Chinese text written here, with no other language's
-  -- column to fall back on (the DBCs carry no zh either), so it is used only
-  -- for a reader whose language is Chinese; every other locale gets the
-  -- client's English name from `name` below, like every other string.
+  -- A row's own `zh` is a hand-written name, so it is used only for a reader
+  -- whose language is Chinese; every other locale gets the client's English
+  -- name from `name` below, like every other string. The client's own DBCs do
+  -- carry Chinese names (Data\patch-ZH.mpq writes them into the name column),
+  -- and those reach every row through CoA.zhName below.
   local zh = entry.zh
   if zh and zh ~= "" and ns.Locale and ns.Locale.Is("zhCN") then return zh end
   local name = entry.name
@@ -395,6 +450,29 @@ function CoA.Name(entry)
     local localised = CoA.zhName(name)
     if localised and localised ~= "" then return localised end
   end
+  return name
+end
+
+-- Reader-facing race name. Takes the client English race name and/or the race id,
+-- because callers hold one or the other: a live record has both, a scoreboard row
+-- only the name. Chinese under zhCN, the English DBC name elsewhere, and the text
+-- it was given when the id is one this table does not carry.
+local raceByName
+function CoA.RaceName(name, id)
+  local row = id and CoA.races[id] or nil
+  if not row and type(name) == "string" and name ~= "" then
+    if not raceByName then
+      raceByName = {}
+      for _, candidate in pairs(CoA.races) do
+        if candidate.name and candidate.name ~= "" then raceByName[candidate.name] = candidate end
+        if candidate.token and candidate.token ~= "" then raceByName[candidate.token] = candidate end
+      end
+    end
+    row = raceByName[name]
+  end
+  if not row then return name end
+  if ns.Locale and ns.Locale.Is and ns.Locale.Is("zhCN") and row.zh and row.zh ~= "" then return row.zh end
+  if row.name and row.name ~= "" then return row.name end
   return name
 end
 
@@ -419,6 +497,9 @@ if names then
   CoA.zhNames, CoA.enNames = names.zhNames, names.enNames
   CoA.zhName, CoA.enName = names.zhName, names.enName
   CoA.todoNames = names.todoNames
+  -- Map.dbc ids: the hand-written table in CoA.lua plus the ids only the
+  -- client's own DBC carries (Locales/zhCN/Maps.lua).
+  CoA.maps, CoA.Map = names.maps, names.Map
 end
 
 ns._test = ns._test or {}
