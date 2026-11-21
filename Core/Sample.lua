@@ -22,12 +22,23 @@
 
 local addonName, ns = ...
 
+local L = ns.L
+
 local Sample = {}
 ns.Sample = Sample
 
 local GUID = "Player-0000-7E5A3E01"
 Sample.GUID = GUID
 Sample.NAME = "Thex Theximus"
+
+-- What the pages, the strips and the tour's search box call him: the same
+-- words in the diary's language (Locales/zhCN: 塞克斯 塞西姆斯), so the
+-- sentences of the tour and the slips they point at agree. His record keeps
+-- the same two parts, and Characters.FullName joins them the way it joins any
+-- player's, so a page, a slip and the People list read one name.
+function Sample.Shown()
+    return L["Thex Theximus"]
+end
 
 -- Where his history lies: a troll's starting zone. The entry's own place is
 -- where the player stands, this only where they cannot be read.
@@ -95,7 +106,7 @@ function Sample.Write(now)
     local start = Start(now)
 
     local record = ns.Characters.Observe(GUID, {
-        first = "Thex", surname = "Theximus", class = "HUNTER", race = "Troll",
+        first = L["Thex"], surname = L["Theximus"], class = "HUNTER", race = "Troll",
         faction = "Horde", level = 12, sex = 2, time = start,
     })
     if not record then return nil end

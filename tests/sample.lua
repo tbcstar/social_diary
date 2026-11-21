@@ -248,3 +248,24 @@ mock.SetUnit("player", F.SELF)
 mock.fire("ADDON_LOADED", ns.addonName)
 Eq(SocialDiaryDB.schema, 2, "a new account file's version")
 Eq(ns.Setting("introSeen"), false, "a new player has seen the tour")
+--------------------------------------------------------------------------
+Section("his name in the diary's own words, not the English one")
+
+-- A diary reading Chinese on this English client: the tour's sentences
+-- already say 塞克斯, so the slip, the record and the search box must too
+-- (Locales/zhCN/Windows.lua, Locales/zhCN/Journey.lua).
+local savedDB, wasLocale = rawget(_G, "SocialDiaryDB"), _G.GetLocale
+_G.SocialDiaryDB = { settings = { language = "zhCN" } }
+_G.GetLocale = function() return "enUS" end
+local zh = T.Boot()
+_G.SocialDiaryDB, _G.GetLocale = savedDB, wasLocale
+
+Eq(zh.Locale.id, "zhCN", "the diary is not reading Chinese")
+Eq(zh.Sample.Shown(), "塞克斯 塞西姆斯", "his name on a slip is still English")
+Check(zh.Sample.NAME == "Thex Theximus", "his identity changed with the language")
+zh.Sample.Write(mock.now)
+Eq(zh.Characters.FullName(zh.Sample.GUID), "塞克斯 塞西姆斯", "his record's name is still English")
+Eq(zh.L["With Thex Theximus for forty minutes."], "与塞克斯 塞西姆斯一起待了四十分钟。",
+    "the sentence that names him does not use that name")
+zh.Sample.Remove()
+

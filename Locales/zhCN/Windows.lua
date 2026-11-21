@@ -59,6 +59,12 @@ ns.Locale.Add("zhCN", {
     ["Add Thex now."] = "现在添加塞克斯。",
     ["Kept for good"] = "永久保留",
     ["Thex is in your diary now. When you meet again, the diary will tell you."] = "塞克斯现在在你的日记里了。当你们再次相遇时，日记会告诉你。",
+    -- 引导里的示例人物：这是一个名字，所以它在日记自己的语言里换个写法，
+    -- 一处译、处处一致（书签上的名字、搜索框、以及 Journey 里那句话）。
+    ["Thex Theximus"] = "塞克斯 塞西姆斯",
+    ["Thex"] = "塞克斯",
+    ["Theximus"] = "塞西姆斯",
+    ["Bram Redfen"] = "布拉姆 雷德芬",
     ["Click him to see his page."] = "点击他查看他的页面。",
     ["Wolfskin Bracers"] = "狼皮护腕",
     ["Your first green!"] = "你的第一件绿装！",

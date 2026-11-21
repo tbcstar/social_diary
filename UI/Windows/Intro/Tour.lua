@@ -176,7 +176,7 @@ local WORDS = {
     -- (bare: "from Hogger", no article) and its rank, the health left, and
     -- the level you were. That record has no npcID (Hogger's is 448, level
     -- 11, elite, in Elwynn Forest): nothing on the card or its tooltip reads one.
-    bram = { deed = "saved", name = "Bram Redfen", creature = "Hogger", rank = "elite", bare = "yes", pct = 8,
+    bram = { deed = "saved", name = L["Bram Redfen"], creature = "Hogger", rank = "elite", bare = "yes", pct = 8,
         level = 6 },
     thex = { minutes = 35 },
     add = L["+ Add"],
@@ -505,7 +505,7 @@ local function Build(parent)
     -- name's line (4), added (5: in strong ink, written as a link, a blot
     -- left before his name).
     local function ThexNote(n)
-        local note = { name = ns.Sample.NAME, seed = "intro-thex",
+        local note = { name = ns.Sample.Shown(), seed = "intro-thex",
             what = Fmt(L["%s together"], ns.UI.Format.Duration(WORDS.thex.minutes * 60)) }
         if n == 4 then
             note.aside = { text = WORDS.add, font = FONT.body, onClick = function() Tour.Add() end }
@@ -1124,8 +1124,8 @@ function Ending()
     Tour.example = { filters = kept }
     -- The real search, as typed: the box's own callback finds the query
     -- already set.
-    J.query.search = Sample.NAME
-    if J.journal and J.journal.search then J.journal.search:SetText(Sample.NAME) end
+    J.query.search = Sample.Shown()
+    if J.journal and J.journal.search then J.journal.search:SetText(Sample.Shown()) end
     Style.PlaySound("pageTurn")
     ns.UI.ShowJournal(Sample.GUID)
     LayEnding()

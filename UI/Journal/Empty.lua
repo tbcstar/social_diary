@@ -69,7 +69,7 @@ local function BuildMenu(parent)
 
     local name = Style.Text(menu, FONT.strong)
     name:SetPoint("TOPLEFT", M.indent, -M.pad - 1)
-    name:SetText("Thex Theximus")
+    name:SetText(L["Thex Theximus"])
     local rule = menu:CreateTexture(nil, "ARTWORK")
     rule:SetHeight(1)
     rule:SetPoint("TOPLEFT", 4, -M.pad - M.row)

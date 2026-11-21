@@ -38,7 +38,7 @@ ns.Locale.Add("zhCN", {
     ["Each level gets an entry, like this:"] = "每个等级都会有一条记录，例如：",
     ["Reached on 6 October at the Crossroads, The Barrens."] = "10月6日到达贫瘠之地的十字路口。",
     ["An hour of quests round the Crossroads. Then Lushwater Oasis."] = "在十字路口附近做了一小时任务。然后前往甜水绿洲。",
-    ["With Thex Theximus for forty minutes."] = "与Thex Theximus一起待了四十分钟。",
+    ["With Thex Theximus for forty minutes."] = "与塞克斯 塞西姆斯一起待了四十分钟。",
     ["1 h 20"] = "1小时20分",
     ["40 min"] = "40分钟",
     ["Stonetalon Mountains"] = "石爪山脉",

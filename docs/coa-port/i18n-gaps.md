@@ -85,7 +85,7 @@
 | 2 | `UI/Blizzard/Bindings.lua:19` | `"Social Diary"` | `BINDING_HEADER_SOCIAL_DIARY = "Social Diary"` —— 系统「按键设置」窗口里这一组绑定的**分类标题** | 同段；`L["Social Diary"]`。旁边注释已说明：绑定**名**（Bindings.xml 里的 `BINDING_NAME_…`）保持英文，只有 header 是给读者看的 | ui-port |
 | 3 | `UI/Windows/Intro/Wrapped.lua:177` | `"SOCIAL DIARY"` | 引导/信件回顾卡片上压印的**标题**：`label.title:SetText("SOCIAL DIARY")`（全大写是美术效果） | `-- UI/Windows/Intro/Wrapped.lua`，`L["SOCIAL DIARY"]`；zhCN 用「社交日记」（中文无大小写，长度受卡片宽度限制） | ui-port |
 | 4 | `UI/Windows/Intro/Tour.lua:172` | `"Your first green!"` | 引导卡片小标题：`find = { heading = "Your first green!", item = L["Wolfskin Bracers"] }`。同一张表里其它 `heading` 都写了 `L[…]\`（164、167 行），只有这条漏了 | `-- UI/Windows/Intro/Tour.lua`，`L["Your first green!"]`；zhCN：「你拿到的第一件绿装！」（voices/zhCN.md：uncommon = 优秀（绿）） | ui-port |
-| 5 | `UI/Journal/Empty.lua:72` | `"Thex Theximus"` | 空白页上演示右键菜单的**虚构人物名**：`name:SetText("Thex Theximus")`；菜单项都已 `L[…]\`，只有这个示例名硬编码 | **已决定保留英文**：示例人名不译，与 Tour.lua 句子里同样保留的 Thex 一致（进 Locale 只是让译者对着一个专名空转） | — |
+| 5 | `UI/Journal/Empty.lua:72` | `"Thex Theximus"` | 空白页上演示右键菜单的**虚构人物名**：`name:SetText("Thex Theximus")`；菜单项都已 `L[…]\`，只有这个示例名硬编码 | **已改为进 Locale**：引导里的句子本来就写着「塞克斯」，卡片却还是拉丁名，两处对不上。现在 `L["Thex Theximus"]` / `L["Thex"]` / `L["Theximus"]` 各一条（zhCN「塞克斯 塞西姆斯」/「塞克斯」/「塞西姆斯」），`Core/Sample.lua` 的 `Sample.Shown()` 供书签与搜索框用，记录里的 first/surname 也走同一对键，所以卡片、书签、人物列表读同一个名字；`Tour.lua` 的 `Bram Redfen` 同理（`L["Bram Redfen"]`，zhCN「布拉姆 雷德芬」）。enUS 仍是原名 | — |
 
 **落地记录**：#1 `UI/Blizzard/Minimap.lua:128` → `L["Social Diary"]`；#2 `UI/Blizzard/Bindings.lua:19` → `L["Social Diary"]`；#3 `UI/Windows/Intro/Wrapped.lua:177` → `string.upper(L["Social Diary"])`（中文无大小写，保住压印的美术效果）；#4 `UI/Windows/Intro/Tour.lua:172` → `L["Your first green!"]`（zhCN「你的第一件绿装！」，enUS.lua 已重生成，现 1872 键）。
 
