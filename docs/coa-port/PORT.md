@@ -110,6 +110,10 @@
     crease/grime 循环都改判它（`UI/Paper/Sheet.lua:358、:693、:705、:723、:730`）。教训：能力缺失不只要退掉那次
     调用，还要退掉**基于该能力的外观假设**。测试见 `tests/sheet_flat.lua`（同一张纸，弯与不弯各画一次，断言不弯时
     只有一种纸色、零 crease、零 grime；把 `view.unbent` 改回 `view.flat` 立刻变 22 种纸色而失败）。
+    **铺平时纸要整块画，不是逐面片同色地拼**：面片之间 `Place` 带 0.5px 的 seal，亚像素落点会留下亚像素级的细缝，
+    缝里露出下面的投影层，屏幕上就是一整片**折痕网格**（真机 21 Nov 2026，引导页淡网格）。所以 `LayPaper` 里
+    `if view.unbent then` 只画一张 `paper`（`Bend(paper, 0, 0, W, H, true)`）与一条 ink 边，grain 也只裁整页一次；
+    逐面片那条路留给真正能弯的客户端。
 
 17. **本客户端的 map id 有两套编号，差 1**：`SetMapByID` 收的是 **WorldMapArea.dbc 的 id**，而
     `GetCurrentMapAreaID` 返回的是**它 + 1**。客户端自己的 FrameXML 就是这么用的：

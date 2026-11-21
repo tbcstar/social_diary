@@ -1,6 +1,6 @@
 -- A sheet on a client whose textures cannot have their corners moved
 -- (the 3.3.5 client, PORT.md §5): the paper is drawn as if laid flat -- one
--- tone, no creases, no grime -- because the mesh only says how paper that
+-- piece, one tone, no creases, no grime -- because the mesh only says how paper that
 -- CAN bend is lit. Drawn otherwise, each facet is a plain rectangle of its
 -- own tone, and the page wears a mosaic of them (the tour's sheet, 19 Nov).
 
@@ -13,11 +13,16 @@ local ns = T.Boot()
 -- many creases, how many wear pieces and how many grain crops it laid on.
 local function Paper(view)
     local tones, creases, worn, grain = {}, 0, 0, 0
+    local tiles, wide, tall = 0, 0, 0
     for _, region in ipairs(mock.frames) do
         local rec = region.parent == view.sheet and region.shown and region.recorded
         if rec then
             local colour = rec.calls.SetColorTexture
-            if colour and rec.layer == "BACKGROUND" and rec.sublevel == -5 then tones[colour[1]] = true end
+            if colour and rec.layer == "BACKGROUND" and rec.sublevel == -5 then
+                tones[colour[1]] = true
+                tiles = tiles + 1
+                wide, tall = math.max(wide, rec.width or 0), math.max(tall, rec.height or 0)
+            end
             if rec.layer == "ARTWORK" and rec.sublevel == 4 then creases = creases + 1 end
             local texture = rec.calls.SetTexture
             if texture and texture[1] == ns.Style.Art("grime") then worn = worn + 1 end
@@ -27,7 +32,7 @@ local function Paper(view)
     end
     local n = 0
     for _ in pairs(tones) do n = n + 1 end
-    return n, creases, worn, grain
+    return n, creases, worn, grain, tiles, wide, tall
 end
 
 Section("a sheet the client cannot bend")
@@ -45,11 +50,13 @@ Check(bentGrain > 1, "a crumpled sheet does not grain each facet: " .. bentGrain
 view.canBend = false
 K.Lay()
 Check(not view.bends, "a sheet was bent on a client that cannot move a corner")
-local tones, creases, worn, grain = Paper(view)
+local tones, creases, worn, grain, tiles, wide, tall = Paper(view)
 Eq(tones, 1, "unbent, the sheet's facets are lit differently: a mosaic of tones over the page")
 Eq(creases, 0, "unbent, the sheet still draws its creases")
 Eq(worn, 0, "unbent, the sheet still draws its wear and grime")
 Eq(grain, 1, "unbent, the sheet's grain is cropped a facet at a time: a grid of seams over the page")
+Eq(tiles, 1, "unbent, the paper is still tiled a facet at a time: a hairline seam at every facet edge")
+Check(wide >= 890 and tall >= 610, "the flat sheet's paper does not cover the sheet: " .. wide .. "x" .. tall)
 
 -- And back, when the corners can move again.
 view.canBend = true

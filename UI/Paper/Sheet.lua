@@ -661,25 +661,33 @@ function ns.UI.LooseSheet(parent, W, H, opts)
         inkPool:Begin()
         paperPool:Begin()
         grainPool:Begin()
-        for i = 1, NX - 1 do
-            for j = 1, NY - 1 do
-                local x0, x1, y0, y1 = X[i], X[i + 1], Y[j], Y[j + 1]
-                local light = FacetLight(i, j)
-                local paper = paperPool:Next()
-                paper:SetColorTexture(P[1] * light, P[2] * light, P[3] * light, 1)
-                Bend(paper, x0, y0, x1, y1, true)
-                -- The ink edge, a pixel out on the outline's sides only.
-                if i == 1 or j == 1 or i == NX - 1 or j == NY - 1 then
-                    Bend(inkPool:Next(), x0 - (i == 1 and 1 or 0), y0 - (j == 1 and 1 or 0),
-                        x1 + (i == NX - 1 and 1 or 0), y1 + (j == NY - 1 and 1 or 0))
-                end
-                -- (Laid flat, the grain is one sheet of it, below: a crop a
-                -- facet would show its seams as a grid of tones.)
-                if grainPath and not view.unbent then
-                    local grain = grainPool:Next()
-                    grain:SetAlpha(0.14 * Style.GrainStrength())
-                    grain:SetTexCoord(x0 / W, x1 / W, y0 / H, y1 / H)
-                    Bend(grain, x0, y0, x1, y1)
+        -- Laid flat, the paper is one piece: a facet at a time it is a
+        -- mosaic, every seam a hairline and every piece its own tone
+        -- (21 Nov 2026: the tour's sheet, on a client that cannot bend).
+        if view.unbent then
+            local paper = paperPool:Next()
+            paper:SetColorTexture(P[1], P[2], P[3], 1)
+            Bend(paper, 0, 0, W, H, true)
+            Bend(inkPool:Next(), -1, -1, W + 1, H + 1)
+        else
+            for i = 1, NX - 1 do
+                for j = 1, NY - 1 do
+                    local x0, x1, y0, y1 = X[i], X[i + 1], Y[j], Y[j + 1]
+                    local light = FacetLight(i, j)
+                    local paper = paperPool:Next()
+                    paper:SetColorTexture(P[1] * light, P[2] * light, P[3] * light, 1)
+                    Bend(paper, x0, y0, x1, y1, true)
+                    -- The ink edge, a pixel out on the outline's sides only.
+                    if i == 1 or j == 1 or i == NX - 1 or j == NY - 1 then
+                        Bend(inkPool:Next(), x0 - (i == 1 and 1 or 0), y0 - (j == 1 and 1 or 0),
+                            x1 + (i == NX - 1 and 1 or 0), y1 + (j == NY - 1 and 1 or 0))
+                    end
+                    if grainPath then
+                        local grain = grainPool:Next()
+                        grain:SetAlpha(0.14 * Style.GrainStrength())
+                        grain:SetTexCoord(x0 / W, x1 / W, y0 / H, y1 / H)
+                        Bend(grain, x0, y0, x1, y1)
+                    end
                 end
             end
         end
