@@ -176,6 +176,11 @@
     连带：`Alone`（平衡行尾单字）不能把中日文行当成「一个词」——它没有空格但不是可下移的词，
     否则 `Balanced` 会反复重排；判据用同一个 `WIDE`，**不要**用 `[\194-\255]`（会把不换行空格
     `U+00A0` 也排除掉，`3 h 20 min` 这类绑定的时间就不再被当成一个词）。测试见 `tests/paper_strip.lua`。
+    另一半（同日，用户截图：纸条每一行都以「…」结尾）：**宽字符画出来比 `GetStringWidth` 量出来的宽**。本客户端给每个
+    汉字多留一点推进量，盒子按 measure 定宽就会被客户端的 FontString 截掉末尾并补省略号。修法（`UI/Paper/Strip.lua`）：
+    `Loose()` 在宽字符语言下（客户端 locale 或日记语言是 zhCN/zhTW/koKR）返回 8，正文换行宽度 `inner` 减去它、
+    每行盒子 `Box()` 再加回来；拉丁语言为 0，行为与上游逐字节相同。测试见 `tests/paper_strip.lua` 的
+    "a wide alphabet, set looser than it measures"。**不要**靠缩短译文掩盖这类截断：同一段代码在别处照样会截。
 ## 3. 兼容层契约（`Core/Compat/`，owner: core-port）
 
 每个文件在 TOC 里紧跟 `Core/Addon.lua` 之后、`Locales/` 之前加载。**按成员补齐，不做整表 guard**（硬性规则 9）：

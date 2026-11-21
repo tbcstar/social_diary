@@ -258,3 +258,31 @@ Check(q.quoteLines >= 1 and q.quoteLines <= STRIP.quote.lines, "a quoted sentenc
 for i = 1, q.quoteLines do
     Check(q.said[i]:GetStringWidth() <= inner, "a quoted line of Chinese runs out of the slip: " .. i)
 end
+
+-- A client reading a wide alphabet sets its glyphs a fraction looser than
+-- the measure counts them: a line boxed as wide as its measure is cut at
+-- its last character and the client ends it in an ellipsis, which every
+-- line of a Chinese note did (the tour's step slip, 21 Nov 2026). So the
+-- lines wrap `loose` px narrower and their boxes take it back.
+Section("a wide alphabet, set looser than it measures")
+local prevDB, prevLocale = _G.SocialDiaryDB, _G.GetLocale
+_G.SocialDiaryDB = { settings = { language = "zhCN" } }
+_G.GetLocale = function() return "enUS" end
+local zh = T.Boot()
+local zhHost = CreateFrame("Frame")
+local wide = zh.UI.PaperStrip(zhHost)
+wide:SetNote({ name = "Wide", what = ZN, lines = 8, seed = "zh:2" })
+wide:Layout(20, 300, 200)
+local loose = 8
+local room = 200 - STRIP.pad[1] - STRIP.pad[3] - loose
+local placed = wide:WhatLines()
+Check(#placed > 1, "a wide alphabet's sentence is not broken into lines")
+for i = 1, #placed do
+    local text = placed[i]:GetText()
+    if text ~= "" then
+        Eq(placed[i].width, placed[i]:GetStringWidth() + 2 + loose,
+            "a wide alphabet's line is boxed as wide as it measures, and the client cuts it: " .. i)
+        Check(placed[i]:GetStringWidth() <= room, "a wide alphabet's line wraps wider than it measures: " .. i)
+    end
+end
+_G.SocialDiaryDB, _G.GetLocale = prevDB, prevLocale

@@ -448,6 +448,21 @@ function ns.UI.PaperStrip(parent, card)
     -- forms (a no-break space, U+00A0, stays out of it).
     local WIDE = "[\227-\239][\128-\191]"
 
+    -- A client reading a wide alphabet (Chinese, Japanese, Korean) sets each
+    -- of its glyphs a fraction of a pixel looser than the measure counts
+    -- them, so a box exactly as wide as the measure is cut at its last
+    -- character and the client ends the line in its ellipsis: every line of
+    -- a Chinese note read "..." at its end (the tour's step slip, 21 Nov
+    -- 2026). Lines wrap this much narrower, and the boxes take it back.
+    local NOT_ROMAN = { koKR = true, zhCN = true, zhTW = true }
+    local function Loose()
+        if NOT_ROMAN[GetLocale and GetLocale() or ""] then return 8 end
+        return (ns.Locale and NOT_ROMAN[ns.Locale.id]) and 8 or 0
+    end
+    -- How wide a box for `text` has to be: its words as measured, and
+    -- `loose` more than the measure says where the client sets them looser.
+    local function Box(text, loose) return Width(text) + 2 + (loose or 0) end
+
     -- `word` cut to fit a line, between characters: Chinese and Japanese put
     -- no spaces between their words, so a whole sentence is one "word" to
     -- the pattern below and has to be broken where it stands (21 Nov 2026,
@@ -749,12 +764,13 @@ function ns.UI.PaperStrip(parent, card)
         local note = self.note or {}
         local pad = STRIP.pad
         local flat = ns.Setting("flatSheets") == true
-        local inner = width - pad[1] - pad[3]
+        local loose = Loose()
+        local inner = width - pad[1] - pad[3] - loose
 
         -- The writing: the name, their note quoted, then what happened in
         -- lines.
         self.name:SetSize(0, 0)
-        local nameW, nameH = Width(self.name) + 2, math.max(math.ceil(self.name:GetStringHeight() or 0), 14)
+        local nameW, nameH = Box(self.name, loose), math.max(math.ceil(self.name:GetStringHeight() or 0), 14)
         -- A blot before the name moves it along; a link at its line's end
         -- (the tour's, EXTRA) takes room after it.
         local blot, aside, foot = note.blot, note.aside, note.foot
@@ -765,7 +781,7 @@ function ns.UI.PaperStrip(parent, card)
             self.aside.label:SetFontObject(aside.font or Style.FONT.body)
             self.aside.label:SetText(aside.text or "")
             self.aside.label:SetSize(0, 0)
-            asideW = Width(self.aside.label) + 2
+            asideW = Box(self.aside.label, loose)
         end
         local Q = STRIP.quote
         local said, cut = {}, false
@@ -785,7 +801,7 @@ function ns.UI.PaperStrip(parent, card)
             line:SetText(words)
             line:SetSize(0, 0)
             quoteH = math.max(quoteH, math.ceil(line:GetStringHeight() or 0), 13)
-            textW = math.max(textW, Width(line) + 2 - (i == 1 and hang or 0))
+            textW = math.max(textW, Box(line, loose) - (i == 1 and hang or 0))
             line:Show()
         end
         for i = #said + 1, #self.said do self.said[i]:Hide() end
@@ -816,7 +832,7 @@ function ns.UI.PaperStrip(parent, card)
                 line.inked = note.ink ~= nil
             end
             lineH = math.max(lineH, math.ceil(line:GetStringHeight() or 0), 11)
-            textW = math.max(textW, Width(line) + 2)
+            textW = math.max(textW, Box(line, loose))
             line:Show()
         end
         for i = #wrapped + 1, #self.lines do self.lines[i]:Hide() end
@@ -831,7 +847,7 @@ function ns.UI.PaperStrip(parent, card)
             label:SetFontObject(foot.font or Style.FONT.strong)
             label:SetText(foot.text or "")
             label:SetSize(0, 0)
-            footW, footH = Width(label) + 2, math.max(math.ceil(label:GetStringHeight() or 0), 13)
+            footW, footH = Box(label, loose), math.max(math.ceil(label:GetStringHeight() or 0), 13)
             local A = EXTRA.arrow
             textW = math.max(textW, footW + (foot.arrow and (A.gap + A.length) or 0))
         end
@@ -1025,14 +1041,14 @@ function ns.UI.PaperStrip(parent, card)
         local quoteTop = top + nameH + underH + Q.gap
         for i = 1, #said do
             local line = self.said[i]
-            local w = Width(line) + 2
+            local w = Box(line, loose)
             local lx = left - (i == 1 and hang or 0)
             Write(line, lx + w / 2, quoteTop + (i - 0.5) * quoteH, w, quoteH)
         end
         local lineTop = top + nameH + underH + quoteGap + whatGap
         for i = 1, #wrapped do
             local line = self.lines[i]
-            local w = Width(line) + 2
+            local w = Box(line, loose)
             Write(line, left + w / 2, lineTop + (i - 0.5) * lineH, w, lineH)
         end
         -- The foot, under what happened.
