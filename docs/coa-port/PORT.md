@@ -114,6 +114,12 @@
     缝里露出下面的投影层，屏幕上就是一整片**折痕网格**（真机 21 Nov 2026，引导页淡网格）。所以 `LayPaper` 里
     `if view.unbent then` 只画一张 `paper`（`Bend(paper, 0, 0, W, H, true)`）与一条 ink 边，grain 也只裁整页一次；
     逐面片那条路留给真正能弯的客户端。
+    **另一个坑：本客户端的绘制顺序是「后创建即在上」，不看 sublevel**（探针 `GetDrawLayer` 连 sublevel 都不返回）。
+    所以那条整页 ink 边（`BACKGROUND -6`，理论上在纸 `-5` 之下）实际盖在纸上，`INK` 在 `LOOK.edge≈0.55` 的透明度下
+    把整张米黄的书页洗成橄榄色（真机 21 Nov 2026：引导页整页发暗、地图板那块反而更亮，因为板的边 alpha 只有 0.30）。
+    修法：铺平时不画整页墨盒，改成**纸之后再画四条 1px 细条**（`for _, side in ipairs({ {-1,-1,W+1,0}, {-1,H,W+1,H+1}, {-1,0,0,H}, {W,0,W+1,H} })`）；
+    同理 `UI/Journey/Plate.lua` 的 `DrawMount` 判据要从 `view.flat` 改成 `view.flat or not view.canBend`，否则投影/厚度/胶/翘角
+    这些 quad 的兜底（`QuadOr` → `Place` 外接矩形）会给页面盖上一道道墨色 band。
 
 17. **本客户端的 map id 有两套编号，差 1**：`SetMapByID` 收的是 **WorldMapArea.dbc 的 id**，而
     `GetCurrentMapAreaID` 返回的是**它 + 1**。客户端自己的 FrameXML 就是这么用的：

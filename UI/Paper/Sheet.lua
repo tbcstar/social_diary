@@ -668,7 +668,15 @@ function ns.UI.LooseSheet(parent, W, H, opts)
             local paper = paperPool:Next()
             paper:SetColorTexture(P[1], P[2], P[3], 1)
             Bend(paper, 0, 0, W, H, true)
-            Bend(inkPool:Next(), -1, -1, W + 1, H + 1)
+            -- The ink edge, over the paper: a pixel out on each side, four
+            -- thin pieces rather than one box the size of the page. The box
+            -- belongs under the paper (BACKGROUND -6 against -5), but this
+            -- client draws the one made later on top whatever its sublevel,
+            -- and the box is INK at LOOK.edge: laid flat it washed the whole
+            -- sheet a dirty olive (21 Nov 2026, the tour's page).
+            for _, side in ipairs({ { -1, -1, W + 1, 0 }, { -1, H, W + 1, H + 1 }, { -1, 0, 0, H }, { W, 0, W + 1, H } }) do
+                Bend(inkPool:Next(), side[1], side[2], side[3], side[4])
+            end
         else
             for i = 1, NX - 1 do
                 for j = 1, NY - 1 do

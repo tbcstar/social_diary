@@ -865,15 +865,15 @@ do
     Eq(#On(plate.sheet, "BACKGROUND", -7), 0, "laid flat, a shadow band is still shown")
     ns.SetSetting("flatSheets", false)
 
-    -- Where corners cannot move: the shadow in boxes, the corners in L
-    -- strips, no folds.
+    -- Where corners cannot move: the plate lies flat. Its shadow, thickness,
+    -- glue and a lifted corner are all quads, and a quad that cannot be bent
+    -- is drawn as the box it spans -- bands of ink over the page -- so none
+    -- of them is drawn; what remains is the card, the print, L-strip corners.
     plate.canBend = false
     Draw()
     c = plate.counts
-    Check(c.shadow > 0 and c.core > 0, "without corners, the plate casts no shadow")
-    for _, band in ipairs(On(plate.sheet, "BACKGROUND", -7)) do
-        Check(not band.bent, "without corners, a shadow band kept its corners")
-    end
+    Eq(c.shadow + c.core + c.edges + c.glue + c.lift, 0,
+        "without corners, the plate's quads fall back to boxes of ink over the page")
     Eq(c.corners, 4 * 2, "without corners, the photo corners are not L strips")
     Eq(c.folds, 0, "without corners, a fold was drawn")
     plate.canBend = true

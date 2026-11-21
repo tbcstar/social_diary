@@ -1382,7 +1382,11 @@ local function New(parent, slot)
     -- corner come unstuck, photo corners. Laid flat, only the corners,
     -- lying flat on it.
     local function DrawMount()
-        local s, flat = plate.slot, view.flat
+        -- Laid flat, or where the client cannot move a texture's corners:
+        -- the shadow, the thickness, the glue and a lifted corner are all
+        -- quads, and their fallback is the box they span -- bands of INK
+        -- laid over the page (21 Nov 2026: the tour's plate).
+        local s, flat = plate.slot, view.flat or not view.canBend
         local W, H, seed = s.w, s.h, Seed()
         local counts = plate.counts
         local glue, corners, lifted = gluePool.used + glossPool.used, cornerPool.used, 0
