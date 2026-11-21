@@ -108,6 +108,7 @@ Locales\zhCN\Settings.lua
 Locales\zhCN\Windows.lua
 Locales\zhCN\CoA.lua
 Locales\zhCN\Names.lua
+Locales\zhCN\Areas.lua
 Locales\zhCN\Changelog.lua
 Locales\plPL\Grammar.lua
 Locales\plPL\Core.lua

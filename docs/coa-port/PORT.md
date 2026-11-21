@@ -125,6 +125,16 @@
     `GetRealZoneText()` 的区名命中；显示走 `ns.ZoneShown`。DBC 拼写与中文名对不上时（`Ogrimmar`/`ThunderBluff`/`Darnassis`、
     东部王国整块图叫 `Azeroth`）在 `Locales/zhCN/Names.lua` 补别名，别改 raw 值。测试的 mock 也照这个偏移建模
     （`tests/wowmock.lua` 的 `SetMapByID` 与 `SetMapToCurrentZone`），否则 shim 与 mock 会互相"证明"错的语义。
+18. **区域名不够用时，从客户端自己的 DBC 取，别手抄**：本机客户端是 `locale=enUS`，`GetRealZoneText`、子区域名、
+    `C_Map.GetMapInfo` 给的全是英文；`Locales/zhCN/Names.lua` 手写了 229 条（大陆、城市、副本、战场、职业），
+    覆盖不到两千多条区域 / 子区域名。`Locales/zhCN/Areas.lua` 由 `tools/dbc_areas.py` 生成：读
+    `Data\patch-AAS.mpq` 里的 `DBFilesClient\AreaTable.dbc`（WDBC 格式，2307 行 / 36 字段；名字是 16 语种块，
+    从记录的字段 idx 11 起，**块内第 5 列就是简体中文**），得到 2105 条「英文 → 中文」，写进与手写表**同一张**
+    `CoA.zhNames`（`or` 合并，手写词条优先；反向表 `CoA.enNames` 一起补，设置页搜中文也能命中）。DBC 中文里夹在
+    音节中间的间隔号换成空格，因为 `tests/copy_rules.lua` 不许玩家可见文本出现间隔号。生成器不在插件包里，
+    重新生成用 `py -3 -B tools\dbc_areas.py`；改译名改生成器的过滤而不是改产物。**只用于显示**：raw 英文名照旧
+    进存档、做键、做比较（与 `docs/coa-port/i18n-gaps.md` 的原则一致），`CoA.zhName` / `ns.ZoneShown` 查不到原样返回。
+    测试见 `tests/areas.lua`（一条只在 DBC 里有的子区域名、手写词条不被覆盖、未知名字不变、反向表可查）。
 ## 3. 兼容层契约（`Core/Compat/`，owner: core-port）
 
 每个文件在 TOC 里紧跟 `Core/Addon.lua` 之后、`Locales/` 之前加载。**按成员补齐，不做整表 guard**（硬性规则 9）：

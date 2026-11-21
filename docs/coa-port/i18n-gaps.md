@@ -71,7 +71,7 @@
 ### 2.3 还没数据、翻不了（要保持英文，别硬造）
 
 - **种族名**：`UI/Words/Format.lua:352` 的 `RACE_NAMES[record.race]`，以及 `GetRace`/`UnitRace` 的返回值。**已定：保留英文**。理由：`ChrRaces.dbc` 有 42 行（经典 10 个 + CoA 自创 32 个），而客户端只装了 enUS 的表（`WTF\Config.wtf` 里 `SET locale "enUS"`，DBC 没有中文列）；自创种族没有任何官方中文名，经典 10 个虽有通行译名，但在客户端里核不到权威来源。按 lead 的规则「查不到就标 TODO，不许编」，这里不落盘。将来若能在客户端 GlobalStrings 或中文 DBC 里核到，再做成 `Locales/zhCN/Names.lua` 的表。
-- **子区域名**（`GetSubZoneText`：Goldshire、Razor Hill…）：`ns.ZoneIn(nil, subZone)` 会查表，但表里没有子区域，所以显示英文。全量 2,849 条 AreaTable 里能对上的很少，暂不铺。
+- **子区域名**（`GetSubZoneText`：Goldshire、Razor Hill…）：**已铺** —— `Locales/zhCN/Areas.lua` 由 `tools/dbc_areas.py` 从客户端 `patch-AAS.mpq` 的 `AreaTable.dbc`（2307 行，16 语种块，块内第 5 列是简体中文）生成 2,105 条英中对照，写进同一张 `CoA.zhNames`（手写词条优先），`ns.ZoneIn(nil, subZone)` / `ZoneShown` 因此都能查到；DBC 里的间隔号换成空格。测试 `tests/areas.lua`。
 - **天赋/专精名**（`ChrSpecs.dbc` 无名字段）、**物品名**（`GetItemInfo` 的 link 名）、**任务名**（`Features/QuestFinales/Data.lua` 97 条 title）、**NPC/生物名**（`Core/Pace/*.lua` 978 条）、**CoA 自创副本/战场/区域**（`CoA.todoNames` 118 条）——都是客户端数据，没有权威中文来源；按 lead 的规则**保留英文**，等社区译名。
 - `Capture/CoA.lua` 的 `CoA.dungeons` 仍是空表（features-port 说 CoA 没有权威副本清单），所以 `ns.CoA.dungeons` 没有任何条目。
 
