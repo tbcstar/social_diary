@@ -48,6 +48,15 @@ local function BuildIntegrations(pane, c)
     end
     page.controls[#page.controls + 1] = page.questieOld
 
+    -- A Questie that answers but keeps no drop rates (Questie-X): what it
+    -- does give is still worth having, so it is ticked, and this says what
+    -- it cannot.
+    page.questieRates = c:Hint(L["This Questie keeps no drop rates: names are read, rates are not checked."])
+    function page.questieRates:Refresh()
+        self:SetShown(ns.QuestieBridge.Status() == "on" and not ns.QuestieBridge.Rates())
+    end
+    page.controls[#page.controls + 1] = page.questieRates
+
     page.deathlog = Placeholder(c, "Deathlog", L["Deathlog installed"],
         L["Adds permadeath notes in Hardcore. Not available until Hardcore is released."])
     page.trp3 = Placeholder(c, "Total RP 3", L["Total RP 3 installed"],

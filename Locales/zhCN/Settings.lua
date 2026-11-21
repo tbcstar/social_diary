@@ -77,6 +77,7 @@ ns.Locale.Add("zhCN", {
     ["Questie installed"] = "已安装Questie",
     ["Mobs get their real names and quest drops are checked against real drop rates. Social Diary only reads from it."] = "怪物会显示真实名称，任务掉落会对照真实掉率校验。Social Diary仅从中读取数据。",
     ["Found, but this version isn't supported."] = "已找到，但不支持此版本。",
+    ["This Questie keeps no drop rates: names are read, rates are not checked."] = "这个版本的 Questie 不带掉率数据：只读取名字，不校验掉率。",
     ["Deathlog installed"] = "已安装Deathlog",
     ["Adds permadeath notes in Hardcore. Not available until Hardcore is released."] = "在硬核模式下添加永久死亡记录。硬核模式上线前不可用。",
     ["Total RP 3 installed"] = "已安装Total RP 3",

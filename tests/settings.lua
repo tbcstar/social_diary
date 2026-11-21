@@ -219,6 +219,26 @@ P:Refresh()
 Check(not P.questieOld:IsShown(), "the unsupported line stays once Questie is gone")
 Eq(P.questie:GetChecked(), false, "Questie installed stays ticked once Questie is gone")
 
+-- Questie-X answers, but keeps no drop rates: ticked, with a line saying so.
+_G.QuestieLoader = { ImportModule = function(_, name)
+    if name == "QuestieDB" then
+        return { npcKeys = { name = 1 }, npcData = {}, itemKeys = { name = 1 }, itemData = {},
+            questKeys = { name = 1 }, questData = {} }
+    end
+end }
+ns.QuestieBridge.Reset()
+P:Refresh()
+Eq(ns.QuestieBridge.Status(), "on", "Questie-X is not read as a supported Questie")
+Eq(P.questie:GetChecked(), true, "Questie installed is ticked for Questie-X")
+Check(not P.questieOld:IsShown(), "the unsupported line shows for Questie-X")
+Check(P.questieRates:IsShown(), "nothing says Questie-X keeps no drop rates")
+Eq(P.questieRates:GetText(), "This Questie keeps no drop rates: names are read, rates are not checked.",
+    "the no-rates line")
+_G.QuestieLoader = nil
+ns.QuestieBridge.Reset()
+P:Refresh()
+Check(not P.questieRates:IsShown(), "the no-rates line stays once Questie is gone")
+
 -- Deathlog and Total RP 3: placeholders under Questie, in that order. Never
 -- ticked, not even with the addon there, and unavailable after any refresh:
 -- the box and its label faded, the small print left at hint ink.

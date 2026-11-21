@@ -1460,6 +1460,7 @@ ns.Locale.Add("enUS", {
     ["Questie installed"] = "Questie installed",
     ["Mobs get their real names and quest drops are checked against real drop rates. Social Diary only reads from it."] = "Mobs get their real names and quest drops are checked against real drop rates. Social Diary only reads from it.",
     ["Found, but this version isn't supported."] = "Found, but this version isn't supported.",
+    ["This Questie keeps no drop rates: names are read, rates are not checked."] = "This Questie keeps no drop rates: names are read, rates are not checked.",
     ["Deathlog installed"] = "Deathlog installed",
     ["Adds permadeath notes in Hardcore. Not available until Hardcore is released."] = "Adds permadeath notes in Hardcore. Not available until Hardcore is released.",
     ["Total RP 3 installed"] = "Total RP 3 installed",

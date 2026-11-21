@@ -9,6 +9,12 @@
 -- its corrections first, then cmangos, then wowhead. Read only, never
 -- written; each answer is kept for the session, since QuestieDB decodes a
 -- table afresh on every read.
+--
+-- Questie-X (the CoA fork, v1.6.4) ships no LibQuestieDB at all: its
+-- database is the QuestieDB module, plain tables numbered by its npcKeys,
+-- itemKeys and questKeys, already written in the client's language by its
+-- own Localization (21 Nov 2026). Ask it for the same names, items and
+-- droppers; it keeps no drop rates, so those stay the older database's.
 
 local addonName, ns = ...
 
@@ -26,13 +32,33 @@ local function DB()
     if not ok or not fits then return nil end
     return lib
 end
-Bridge.On = function() return DB() ~= nil end
+
+-- The Questie-X database, where that is what runs: its module answers with
+-- plain tables, and its keys tables say which number holds which field.
+local function Xer()
+    local loader = rawget(_G, "QuestieLoader")
+    if type(loader) ~= "table" or type(loader.ImportModule) ~= "function" then return nil end
+    local ok, db = pcall(loader.ImportModule, loader, "QuestieDB")
+    if not ok or type(db) ~= "table" then return nil end
+    if type(db.npcData) ~= "table" or type(db.npcKeys) ~= "table" or type(db.npcKeys.name) ~= "number" then
+        return nil
+    end
+    return db
+end
+
+-- A field of one of Questie-X's rows, by the number its keys table gives.
+local function Field(row, key)
+    if type(row) ~= "table" or type(key) ~= "number" then return nil end
+    return row[key]
+end
+
+Bridge.On = function() return DB() ~= nil or Xer() ~= nil end
 
 -- What Settings > Integrations shows: "on" where its database answers,
 -- "old" where Questie or its database is there but not one this file can
 -- read, "off" where neither is.
 function Bridge.Status()
-    if DB() then return "on" end
+    if DB() or Xer() then return "on" end
     local loaded = C_AddOns and C_AddOns.IsAddOnLoaded
     local function Has(name)
         if loaded then
@@ -44,6 +70,11 @@ function Bridge.Status()
     if rawget(_G, "LibQuestieDB") or rawget(_G, "Questie") or Has("QuestieDB") or Has("Questie") then return "old" end
     return "off"
 end
+
+-- Whether it can be asked how often something drops. Questie-X keeps no
+-- drop rates, so from it the diary takes names and items only, and the
+-- panel says so.
+function Bridge.Rates() return DB() ~= nil end
 
 -- A field of an entity, guarded: nil for anything that is not there or
 -- errors.
@@ -85,10 +116,18 @@ function Bridge.NpcName(npcID)
     local known = names[npcID]
     if known ~= nil then return known or nil end
     local name = Get("Npc", npcID, "name")
-    if type(name) ~= "string" or name == "" then name = nil end
-    if name and not English() and Raw("Npc", npcID, "name") == name then name = nil end
-    -- Only kept once QuestieDB has answered: without it, nothing is learnt.
-    if DB() then names[npcID] = name or false end
+    if type(name) ~= "string" or name == "" then
+        name = nil
+        -- Questie-X translates its names into the client's language itself,
+        -- so whatever it holds is already the one to show.
+        local db = Xer()
+        local value = db and Field(db.npcData[npcID], db.npcKeys.name)
+        if type(value) == "string" and value ~= "" then name = value end
+    elseif not English() and Raw("Npc", npcID, "name") == name then
+        name = nil
+    end
+    -- Only kept once a database has answered: without one, nothing is learnt.
+    if DB() or Xer() then names[npcID] = name or false end
     return name
 end
 
@@ -99,9 +138,35 @@ end
 -- The item that objective's `itemName` is, for quest `questID`: one of the
 -- quest's item objectives, by its name in the client's language; the only
 -- one, where there is only one.
-function Bridge.ItemFor(questID, itemName)
+-- The quest's item objectives, from either database: objective 3 is the
+-- item list, each entry { itemID, text, ... }.
+local function ItemObjectives(questID)
     local objectives = Get("Quest", questID, "objectives")
     local items = type(objectives) == "table" and objectives[3]
+    if type(items) == "table" then return items end
+    local db = Xer()
+    local keys = db and db.questKeys
+    local quest = db and type(db.questData) == "table" and db.questData[questID]
+    local list = Field(quest, keys and keys.objectives)
+    items = type(list) == "table" and list[3]
+    if type(items) == "table" then return items end
+    return nil
+end
+
+-- An item's name, from either database.
+local function ItemName(id)
+    local name = Get("Item", id, "name")
+    if type(name) == "string" and name ~= "" then return name end
+    local db = Xer()
+    local keys = db and db.itemKeys
+    local item = db and type(db.itemData) == "table" and db.itemData[id]
+    local value = Field(item, keys and keys.name)
+    if type(value) == "string" and value ~= "" then return value end
+    return nil
+end
+
+function Bridge.ItemFor(questID, itemName)
+    local items = ItemObjectives(questID)
     if type(items) ~= "table" then return nil end
     local ids = {}
     for _, entry in pairs(items) do
@@ -111,7 +176,7 @@ function Bridge.ItemFor(questID, itemName)
     if type(itemName) == "string" then
         local lower = itemName:lower()
         for _, id in ipairs(ids) do
-            local name = Get("Item", id, "name")
+            local name = ItemName(id)
             if type(name) == "string" and (name == itemName or name:lower() == lower) then return id end
         end
     end
@@ -126,13 +191,19 @@ function Bridge.Droppers(itemID)
     if type(itemID) ~= "number" then return nil end
     if droppers[itemID] ~= nil then return droppers[itemID] or nil end
     local list = Get("Item", itemID, "npcDrops")
+    if type(list) ~= "table" then
+        local db = Xer()
+        local keys = db and db.itemKeys
+        local item = db and type(db.itemData) == "table" and db.itemData[itemID]
+        list = Field(item, keys and keys.npcDrops)
+    end
     local out = {}
     for _, id in pairs(type(list) == "table" and list or {}) do
         if type(id) == "number" then out[#out + 1] = id end
     end
     table.sort(out)
     if #out == 0 then out = nil end
-    if DB() then droppers[itemID] = out or false end
+    if DB() or Xer() then droppers[itemID] = out or false end
     return out
 end
 

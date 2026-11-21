@@ -129,6 +129,42 @@ Eq(Q.DropRate(4739, 2955), 25.0, "the tables, where Questie has no DropDB")
 _G.QuestieLoader = nil
 
 --------------------------------------------------------------------------
+-- Questie-X keeps its own database
+
+-- The CoA fork ships no LibQuestieDB: QuestieDB is a module of plain tables
+-- numbered by npcKeys/itemKeys/questKeys, and its Localization has already
+-- written the client's language into them. It keeps no drop rates at all.
+local xdb = {
+    npcKeys = { name = 1 },
+    itemKeys = { name = 1, npcDrops = 2 },
+    questKeys = { name = 1, objectives = 10 },
+    npcData = { [2955] = { "Plainstrider" } },
+    itemData = { [4739] = { "Plainstrider Meat", { 2956, 2955 } } },
+    questData = { [781] = { [10] = { nil, nil, { { 4739 } } } } },
+}
+local lib = _G.LibQuestieDB
+_G.LibQuestieDB = nil
+_G.QuestieLoader = { ImportModule = function(_, name) if name == "QuestieDB" then return xdb end end }
+Q.Reset()
+Eq(Q.On(), true, "on with Questie-X alone")
+Eq(Q.Status(), "on", "the settings' status with Questie-X")
+Eq(Q.Rates(), false, "rates from Questie-X")
+Eq(Q.NpcName(2955), "Plainstrider", "a creature's name from Questie-X")
+Eq(Q.NpcName(99999), nil, "an unknown creature in Questie-X")
+Eq(Q.ItemFor(781, "Plainstrider Meat"), 4739, "the item by its name from Questie-X")
+Eq(Q.ItemFor(781, "Something Else"), 4739, "the only item, whatever the log calls it")
+Eq(table.concat(Q.Droppers(4739), ","), "2955,2956", "every kind that drops it, from Questie-X")
+Eq(Q.Droppers(9999), nil, "an item nothing drops, in Questie-X")
+Eq(Q.DropRate(4739, 2955), nil, "a rate Questie-X does not keep")
+-- A Questie there, but no module of that shape to read.
+_G.QuestieLoader = { ImportModule = function() return { private = {} } end }
+Q.Reset()
+Eq(Q.On(), false, "on with a QuestieLoader that is not the database")
+_G.QuestieLoader, _G.LibQuestieDB = nil, lib
+Q.Reset()
+Eq(Q.Rates(), true, "rates from QuestieDB")
+
+--------------------------------------------------------------------------
 Section("real creature names (EXT-1)")
 
 mock.fire("PLAYER_ENTERING_WORLD", true, false)
