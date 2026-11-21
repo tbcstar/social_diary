@@ -55,9 +55,12 @@ after Core/Addon.lua, before Locales/. Every definition is guarded with
   methods there).
 - Texture:SetAtlas is a no-op; C_Texture.GetAtlasInfo always returns nil, so
   every caller's coloured-texture fallback is what actually draws.
-- CreateFrame strips the "BackdropTemplate" token from the template argument
-  (3.3.5 raises on unknown templates) and passes any other templates through;
-  3.3.5 frames already support SetBackdrop.
+- ns.BackdropTemplate is "BackdropTemplate" where the client accepts that
+  template and nil where it raises on unknown ones (3.3.5); the caller
+  (UI/Kit/Chrome.lua) passes it instead of a bare token. The global CreateFrame
+  is never reassigned: a global an addon overwrites is tainted for the session,
+  and so is every secure frame Blizzard creates through it afterwards (21 Nov
+  2026: "插件 social_diary 污染了安全函数 UseAction() 的调用").
 
 ## Core/Compat/Map.lua
 - C_Map.GetBestMapForUnit: SetMapToCurrentZone + GetCurrentMapAreaID, cached by

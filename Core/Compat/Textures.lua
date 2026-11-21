@@ -51,27 +51,21 @@ if not C_Texture then
     }
 end
 
--- 3.3.5 raises on an unknown template name, and the addon asks for
--- "BackdropTemplate" (UI/Kit/Chrome.lua). The token is stripped and the rest
--- of the template list is passed through; 3.3.5 frames already support
--- SetBackdrop, which is what the addon calls.
+-- 3.3.5 raises on an unknown template name, and retail wants
+-- "BackdropTemplate" on a frame that then calls SetBackdrop (UI/Kit/Chrome.lua).
+-- Ask the client once, with a throwaway frame, and let a caller pass the token
+-- only where it is understood; 3.3.5 frames always take SetBackdrop.
+--
+-- The global CreateFrame is deliberately NOT replaced. Reassigning a global
+-- from addon code marks it tainted for the rest of the session, and every
+-- frame Blizzard's own secure code creates through it afterwards -- an action
+-- button made when a vehicle's bar appears, say -- is tainted with it: on
+-- 21 Nov 2026 this client reported 「插件 social_diary 污染了安全函数
+-- UseAction() 的调用」, UseAction being what a secure action button calls.
+-- A probe and a value do the same job without writing anything of the
+-- client's.
 local RealCreateFrame = CreateFrame
 if RealCreateFrame then
-    local function WithoutBackdropTemplate(template)
-        if type(template) ~= "string" then return template end
-        if not template:find("BackdropTemplate", 1, true) then return template end
-        local names = {}
-        for piece in template:gmatch("[^,]+") do
-            local token = piece:match("^%s*(.-)%s*$")
-            if token ~= "" and token ~= "BackdropTemplate" then
-                names[#names + 1] = token
-            end
-        end
-        if #names == 0 then return nil end
-        return table.concat(names, ",")
-    end
-
-    _G.CreateFrame = function(frameType, name, parent, template, id)
-        return RealCreateFrame(frameType, name, parent, WithoutBackdropTemplate(template), id)
-    end
+    local ok = pcall(RealCreateFrame, "Frame", nil, UIParent, "BackdropTemplate")
+    ns.BackdropTemplate = ok and "BackdropTemplate" or nil
 end

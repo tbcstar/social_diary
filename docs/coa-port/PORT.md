@@ -135,6 +135,13 @@
     重新生成用 `py -3 -B tools\dbc_areas.py`；改译名改生成器的过滤而不是改产物。**只用于显示**：raw 英文名照旧
     进存档、做键、做比较（与 `docs/coa-port/i18n-gaps.md` 的原则一致），`CoA.zhName` / `ns.ZoneShown` 查不到原样返回。
     测试见 `tests/areas.lua`（一条只在 DBC 里有的子区域名、手写词条不被覆盖、未知名字不变、反向表可查）。
+19. **绝不覆盖客户端自己的全局函数/表（`CreateFrame` 这类）**：addon 给一个全局赋新值，这个全局在本会话里就带污染（tainted），
+    之后**客户端自己的安全代码**通过它造出来的东西也带污染——2026-11-21 真机弹「插件 social_diary 污染了安全函数
+    `UseAction()` 的调用」，安全动作按钮点下去调的就是 `UseAction`。所以 `Core/Compat/Textures.lua` 里那段「把
+    `_G.CreateFrame` 换成剥掉 `BackdropTemplate` 的包装」已删除：改成一次性探测 `ns.BackdropTemplate`
+    （`pcall(CreateFrame, "Frame", nil, UIParent, "BackdropTemplate")` 成功才给字符串，3.3.5 给 nil），
+    `UI/Kit/Chrome.lua` 只在拿到值时才把这个 token 传给 `CreateFrame`（3.3.5 的 Frame 本来就能直接 `SetBackdrop`）。
+    要给客户端已有的表补东西，按硬性规则 9 只补缺失成员，绝不整表替换。
 ## 3. 兼容层契约（`Core/Compat/`，owner: core-port）
 
 每个文件在 TOC 里紧跟 `Core/Addon.lua` 之后、`Locales/` 之前加载。**按成员补齐，不做整表 guard**（硬性规则 9）：
@@ -150,7 +157,7 @@
 | `Core/Compat/Units.lua` | `C_UnitAuras`、`C_PlayerInfo`、`C_PartyInfo`、`C_Friend`、`GetSpecialization`/`GetSpecializationInfo` | `UnitAura(unit,i,filter)` → 表；`GetPlayerInfoByGUID`；`GetNumSubgroupMembers`；`GetTalentTabInfo` |
 | `Core/Compat/PvP.lua` | `C_PvP` | `GetBattlefieldScore`/`GetBattlefieldStatData`/`GetNumBattlefieldScores` |
 | `Core/Compat/Widgets.lua` | `Frame/Texture/FontString/Button/...` 的 retail 专有方法（见硬性规则 13）：real 缺失的补 no-op 或 3.3.5 等价物 | 空实现/`SetDesaturated`/`GetStringWidth` |
-| `Core/Compat/Textures.lua` | `Texture:SetColorTexture`、`C_Texture`、`SetAtlas` | `SetTexture(r,g,b,a)`；atlas → 3.3.5 贴图路径或 nil（调用方必须能接受 nil） |
+| `Core/Compat/Textures.lua` | `Texture:SetColorTexture`、`C_Texture`、`SetAtlas`、`ns.BackdropTemplate` | `SetTexture(r,g,b,a)`；atlas → 3.3.5 贴图路径或 nil（调用方必须能接受 nil）；`ns.BackdropTemplate` 探测客户端认不认该模板，不覆盖 `CreateFrame`（硬性规则 19） |
 | `Core/Compat/Settings.lua` | `Settings` | 注册表 + 打开插件自己的设置页（`UI/Settings/Page.lua`），并在 3.3.5 的 Interface Options 里加一个入口 |
 
 **`SetColorTexture` 是 240 处**：只要把 `Texture:SetColorTexture` 补上（`SetTexture(r,g,b,a)`），

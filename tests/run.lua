@@ -127,6 +127,7 @@ local FILES = {
     "fonts",
     "locale",
     "areas",
+    "taint",
 }
 
 dofile(here .. "/harness.lua").Run(here, FILES, arg)

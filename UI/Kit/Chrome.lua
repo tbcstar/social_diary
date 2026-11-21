@@ -34,7 +34,7 @@ local BACKDROP = {
 -- border to sit inside.
 function Chrome.Panel(globalName, width, height, title, opts)
     local bare = opts and opts.bare
-    local panel = CreateFrame("Frame", globalName, UIParent, not bare and "BackdropTemplate" or nil)
+    local panel = CreateFrame("Frame", globalName, UIParent, not bare and ns.BackdropTemplate or nil)
     panel:SetSize(width, height)
     panel:SetPoint("CENTER")
     panel:SetFrameStrata("DIALOG")
