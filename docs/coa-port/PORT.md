@@ -181,6 +181,11 @@
     `Loose()` 在宽字符语言下（客户端 locale 或日记语言是 zhCN/zhTW/koKR）返回 8，正文换行宽度 `inner` 减去它、
     每行盒子 `Box()` 再加回来；拉丁语言为 0，行为与上游逐字节相同。测试见 `tests/paper_strip.lua` 的
     "a wide alphabet, set looser than it measures"。**不要**靠缩短译文掩盖这类截断：同一段代码在别处照样会截。
+    同一个尺码问题还有第二张脸（21 Nov 2026，引导第 4 步）：名字后面跟一个右对齐的链接（纸条的 `aside`，
+    「塞克斯 塞西姆斯」+「添加」）时，宽字符名比拉丁名长，`W = math.min(width, nameW + gap + asideW)` 被调用方
+    的宽度夹住，链接就压在名字末字上。修法（`Strip.lua` 的 `Lay`）：算 `nameRow`，放不下就置 `asideRow`，
+    让链接**在名字下面另起一行**，`H`／`under`／`quoteTop`／`lineTop` 都加上这段高度；测试
+    `tests/paper_strip.lua` 的 "a link that would run into the name"。
 ## 3. 兼容层契约（`Core/Compat/`，owner: core-port）
 
 每个文件在 TOC 里紧跟 `Core/Addon.lua` 之后、`Locales/` 之前加载。**按成员补齐，不做整表 guard**（硬性规则 9）：

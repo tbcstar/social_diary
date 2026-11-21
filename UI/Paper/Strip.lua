@@ -792,6 +792,13 @@ function ns.UI.PaperStrip(parent, card)
         -- The opening quote hangs into the margin, so the words line up.
         local hang = #said > 0 and math.min(Q.hang, pad[1] - 1, Measure(voice, Q.open)) or 0
         local quoteH, textW = 0, indent + nameW + (aside and (EXTRA.aside.gap + asideW) or 0)
+        -- A link that would run into the name goes its own line under it
+        -- instead: a wide alphabet's names are longer than the Latin ones
+        -- this row was drawn for (21 Nov 2026, the tour's "Add" over
+        -- "塞克斯 塞西姆斯").
+        local nameRow = indent + nameW + (aside and (EXTRA.aside.gap + asideW) or 0)
+        local asideRow = aside and nameRow > width - pad[1] - pad[3] and (14 + STRIP.gap) or 0
+        if asideRow > 0 then textW = math.max(indent + nameW, asideW) end
         for i, words in ipairs(said) do
             local line = self.said[i]
             if not line then
@@ -852,7 +859,7 @@ function ns.UI.PaperStrip(parent, card)
             textW = math.max(textW, footW + (foot.arrow and (A.gap + A.length) or 0))
         end
         W = math.min(width, math.max(note.least or 0, math.ceil(math.max(textW, picW, underW)) + pad[1] + pad[3]))
-        H = pad[2] + picH + nameH + underH + quoteGap
+        H = pad[2] + picH + nameH + asideRow + underH + quoteGap
             + (#wrapped > 0 and (whatGap + lineH * #wrapped) or 0) + (foot and (EXTRA.foot.gap + footH) or 0) + pad[4]
         H = math.max(H, note.tall or 0)
         -- A blank slip is the size its caller wrote on.
@@ -1017,7 +1024,8 @@ function ns.UI.PaperStrip(parent, card)
         end
         -- The link at the name line's end, flush right, sitting on the
         -- name's line as Recently nearby's "+ Add" does.
-        Extra(self.aside, aside, W / 2 - pad[3] - asideW, top + nameH / 2 + 1, asideW, 14,
+        Extra(self.aside, aside, W / 2 - pad[3] - asideW,
+            asideRow > 0 and (top + nameH + STRIP.gap + 7) or (top + nameH / 2 + 1), asideW, 14,
             Style.INK_STRONG)
         -- The blot before the name, at its middle's height.
         self.blotAt = nil
@@ -1032,20 +1040,20 @@ function ns.UI.PaperStrip(parent, card)
         -- The room under the name: where it lies, as the picture's.
         self.under = nil
         if under then
-            local lx, ly = left + under.w / 2, top + nameH + (under.gap or 0) + under.h / 2
+            local lx, ly = left + under.w / 2, top + nameH + asideRow + (under.gap or 0) + under.h / 2
             local X, Y = Screen(lx, ly)
             local px, py = Out(lx, ly)
             self.under = { lx = lx, ly = ly, w = under.w, h = under.h, X = X, Y = Y, x = px, y = py }
         end
         -- Their words, the first line's opening quote in the margin.
-        local quoteTop = top + nameH + underH + Q.gap
+        local quoteTop = top + nameH + asideRow + underH + Q.gap
         for i = 1, #said do
             local line = self.said[i]
             local w = Box(line, loose)
             local lx = left - (i == 1 and hang or 0)
             Write(line, lx + w / 2, quoteTop + (i - 0.5) * quoteH, w, quoteH)
         end
-        local lineTop = top + nameH + underH + quoteGap + whatGap
+        local lineTop = top + nameH + asideRow + underH + quoteGap + whatGap
         for i = 1, #wrapped do
             local line = self.lines[i]
             local w = Box(line, loose)

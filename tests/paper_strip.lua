@@ -286,3 +286,31 @@ for i = 1, #placed do
     end
 end
 _G.SocialDiaryDB, _G.GetLocale = prevDB, prevLocale
+
+--------------------------------------------------------------------------
+-- The tour's "Add" link sits at the end of a person's name; a wide
+-- alphabet's name is longer than the Latin row it was drawn for, and the
+-- link printed over its last characters (the tour, 21 Nov 2026). A link
+-- that would run into the name takes a line of its own under it.
+Section("a link that would run into the name")
+
+local function LinkNote(name)
+    return { name = name, what = "15 min together", strong = true, seed = "aside:1",
+        aside = { text = "Add", onClick = function() end } }
+end
+-- The mock measures 6 px a byte: this name is 22 bytes (132 px), the link
+-- 3 (18 px) and its gap 6, so they cannot share a 120 px row.
+local linked = ns.UI.PaperStrip(host)
+linked:SetNote(LinkNote("塞克斯 塞西姆斯"))
+local lw = linked:Layout(20, 300, 120)
+local box, at = linked.nameBox, linked.aside.at
+Check(at.ly - at.h / 2 >= box[4], "a link at the end of a wide name runs into it")
+Eq(at.lx + at.w, lw / 2 - STRIP.pad[3], "a stacked link is not flush right on its own line")
+
+-- A name short enough to leave room keeps its link on the name's line.
+local short = ns.UI.PaperStrip(host)
+short:SetNote(LinkNote("Thex"))
+short:Layout(20, 300, 200)
+local sbox, sat = short.nameBox, short.aside.at
+Check(sat.ly < sbox[4], "a short name's link left its line")
+
