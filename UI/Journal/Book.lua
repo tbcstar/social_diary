@@ -280,13 +280,13 @@ local function Build()
     -- hung on the right.
     panel.ribbons = {}
     local x = 112 - RIBBON_W
-    for i, r in ipairs(J.Ribbons()) do
+    for _, r in ipairs(J.Ribbons()) do
         -- A ribbon pulled turns the book to its page, with the sound of it:
         -- from under the introduction's sheet too, which puts it away.
         panel.ribbons[r.key] = Style.BookRibbon(panel.book, x, RIBBON_W, COVER, r.colour, r.label, function()
             if J.view ~= r.key then Style.PlaySound("pageTurn") end
             ns.UI.SetJournalView(r.key)
-        end, i)
+        end)
         x = x + RIBBON_W + RIBBON_GAP
     end
 

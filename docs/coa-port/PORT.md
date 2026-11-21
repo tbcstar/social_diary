@@ -111,6 +111,20 @@
     调用，还要退掉**基于该能力的外观假设**。测试见 `tests/sheet_flat.lua`（同一张纸，弯与不弯各画一次，断言不弯时
     只有一种纸色、零 crease、零 grime；把 `view.unbent` 改回 `view.flat` 立刻变 22 种纸色而失败）。
 
+17. **本客户端的 map id 有两套编号，差 1**：`SetMapByID` 收的是 **WorldMapArea.dbc 的 id**，而
+    `GetCurrentMapAreaID` 返回的是**它 + 1**。客户端自己的 FrameXML 就是这么用的：
+    `FrameXML/WorldMapFrame.lua:1582-1606` 先 `local mapID = GetCurrentMapAreaID() - 1` 再 `SetMapByID(mapID)`，
+    `:2337-2339` 把 `GetQuestWorldMapAreaID`（DBC id）直接喂进去；`FrameXML/Util/C_WorldMap.lua:3-34` 的
+    continent/city 表逐条 = DBC id + 1（301 Stormwind…504 Dalaran、13 Kalimdor、14 Azeroth=东部王国、485 Northrend）。
+    所以 `Core/Compat/Map.lua` 的 `MapInfo` 写 `pcall(SetMapByID, mapID - 1)`，再用 `GetCurrentMapAreaID() == mapID`
+    判客户端是否真认得这张图（三张表的对账记在 `Core/Compat/NOTES.md`）。**存档、设置里一律用客户端报的那个 id**。
+    但同一个地图在两代客户端上的 id 不同（零售 1453 Stormwind City… vs 本客户端 301/321/341…），所以城市清单（SIG-5）
+    改存**区域名**：`Core/DB.lua` 的 `cities` 用 `"Stormwind City"` / `"Orgrimmar"` 这类 key，`CHARACTER_SCHEMA = 3`
+    加 `STEPS.character[3]` 把旧的 1453..1458 搬过去（值 true/false 一起搬，删掉旧键）；`ns.City()` 先查 sanctuary、
+    再按 `GetBestMapForUnit` 的 id 与父级（数字 key 仍支持，`/sd sightings city add 1454` 照样有效），最后由
+    `GetRealZoneText()` 的区名命中；显示走 `ns.ZoneShown`。DBC 拼写与中文名对不上时（`Ogrimmar`/`ThunderBluff`/`Darnassis`、
+    东部王国整块图叫 `Azeroth`）在 `Locales/zhCN/Names.lua` 补别名，别改 raw 值。测试的 mock 也照这个偏移建模
+    （`tests/wowmock.lua` 的 `SetMapByID` 与 `SetMapToCurrentZone`），否则 shim 与 mock 会互相"证明"错的语义。
 ## 3. 兼容层契约（`Core/Compat/`，owner: core-port）
 
 每个文件在 TOC 里紧跟 `Core/Addon.lua` 之后、`Locales/` 之前加载。**按成员补齐，不做整表 guard**（硬性规则 9）：
@@ -155,7 +169,7 @@
   实现用 `SetMapToCurrentZone(); GetCurrentMapAreaID()`，**并在调用后恢复玩家原来的地图视图**
   （保存 `GetCurrentMapContinent()`/`GetCurrentMapZone()`，用 `SetMapZoom` 还原）。
   绝不允许每次 `ns.Where()` 都把世界地图重置到玩家位置（会把玩家的地图浏览打断）。
-- `C_Map.GetMapInfo(id)`：`SetMapByID(id)` → `GetMapInfo()` → 还原。
+- `C_Map.GetMapInfo(id)`：`SetMapByID(id - 1)`（本客户端的偏移，见硬性规则 17）→ `GetMapInfo()` → 还原。
 - `C_Map.GetPlayerMapPosition(mapID, "player")`：同上，用 `GetPlayerMapPosition("player")`（返回 x,y 0..1）。
 - `C_Map.GetWorldPosFromMapPos` / `GetMapPosFromWorldPos` / `CreateVector2D`：3.3.5 **无等价物** →
   返回 nil。调用方（`Core/Location.lua` 的 `Project`）已有 nil 分支，只是"路线不再跨子地图投影"。

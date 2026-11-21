@@ -75,9 +75,16 @@ C_Map.GetBestMapForUnit = function(unit)
 end
 Eq(ns.MapParent(2001), 1454, "the parent map id")
 Eq(ns.MapName(2001), "Valley of Strength", "a district's name")
+-- The list is written in zone names now, and City() matches one through the
+-- zone text, which inside a city is the city's own name. The parent walk
+-- still matters for a key spelled as a map id, which the commands still take.
+ns.db.settings.cities[1454] = true
 mock.mapID = 2001
-Eq(ns.City(), 1454, "a district of a listed city is not the city")
-mock.mapID = 1412
+Eq(ns.City(), 1454, "a district of a city listed by id is not the city")
+ns.db.settings.cities[1454] = nil
+mock.zone = "Orgrimmar"
+Eq(ns.City(), "Orgrimmar", "a city listed by name is not the city")
+mock.zone, mock.mapID = "Mulgore", 1412
 Eq(ns.City(), nil, "Mulgore read as a city")
 C_Map.GetMapInfo, C_Map.GetBestMapForUnit = GetMapInfo, GetBestMapForUnit
 
@@ -113,6 +120,15 @@ ns._test.Migrate(old, 2, ns._test.CharacterSteps)
 Eq(old.settings.sessionGapMinutes, nil, "the old session gap kept")
 Eq(old.settings.storeChat, false, "another setting lost with the session gap")
 Eq(old.schema, 2, "character schema not bumped")
+
+-- Character schema 3: the city list's keys become zone names, so a city the
+-- user removed is not brought back by the defaults.
+local moved = { schema = 2, settings = { cities = { [1453] = true, [1454] = false } } }
+ns._test.Migrate(moved, 3, ns._test.CharacterSteps)
+Eq(moved.settings.cities["Stormwind City"], true, "a kept city lost its key")
+Eq(moved.settings.cities["Orgrimmar"], false, "a removed city lost its key")
+Eq(moved.settings.cities[1453], nil, "an old map id survived")
+Eq(moved.schema, 3, "character schema not bumped")
 
 -- The inconsistency this fixed: Prune fell back to 30 days, Rollup did not.
 settings.bufferDays = nil

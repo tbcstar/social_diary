@@ -39,6 +39,13 @@ CoA.zhNames = {
     ["Exodar"] = "埃索达",
     ["Thunder Bluff"] = "雷霆崖",
     ["Undercity"] = "幽暗城",
+    -- CoA 的 WorldMapArea.dbc 把这三个拼成了别的样子（少空格、少一个字母），
+    -- 客户端自己报出来的就是这一串，所以按原文各补一条。
+    ["Ogrimmar"] = "奥格瑞玛",
+    ["ThunderBluff"] = "雷霆崖",
+    ["Darnassis"] = "达纳苏斯",
+    -- 本客户端里「东部王国」的整块世界地图 DBC 名字就是 Azeroth。
+    ["Azeroth"] = "东部王国",
     ["Silvermoon City"] = "银月城",
     ["Shattrath City"] = "沙塔斯城",
     ["Dalaran"] = "达拉然",

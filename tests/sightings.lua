@@ -144,7 +144,7 @@ mock.mapID, mock.zone = 1454, "Orgrimmar"
 mock.fire("ZONE_CHANGED_NEW_AREA")
 local state, why = Capture.State()
 Eq(state, "city", "Orgrimmar is not a city")
-Eq(why, 1454, "the matched city")
+Eq(why, "Orgrimmar", "the matched city")
 Eq(Capture.QueueLength(), 0, "the queue survived entering a city")
 Check(not mock.registered.CHAT_MSG_TEXT_EMOTE, "SIG-5: a source still registered in a city")
 Check(not mock.registered.CHAT_MSG_EMOTE, "SIG-5: a source still registered in a city")
@@ -153,12 +153,13 @@ mock.fire("NAME_PLATE_UNIT_ADDED", "nameplate5")
 mock.fire("PLAYER_TARGET_CHANGED")
 Eq(Capture.QueueLength(), 0, "queued in a city")
 
--- A removed city stays removed, through the defaults.
-ns.db.settings.cities[1454] = false
+-- A removed city stays removed, through the defaults. The list is written in
+-- zone names, the ones the client's own zone text uses inside the city.
+ns.db.settings.cities["Orgrimmar"] = false
 ns.InitDB()
-Eq(ns.db.settings.cities[1454], false, "the defaults brought a removed city back")
+Eq(ns.db.settings.cities["Orgrimmar"], false, "the defaults brought a removed city back")
 Eq((Capture.Evaluate()), "active", "a removed city still pauses")
-ns.db.settings.cities[1454] = true
+ns.db.settings.cities["Orgrimmar"] = true
 Eq((Capture.Evaluate()), "city", "a re-added city does not pause")
 
 -- An inn in a small town is resting, not a city; a sanctuary is.
@@ -252,13 +253,13 @@ for _, command in ipairs({
     SlashCmdList.SOCIALDIARY(command)
 end
 Eq(ns.db.settings.cities[1412], false, "/sd sightings city remove <id>")
-mock.mapID = 1454
+mock.mapID, mock.zone = 1454, "Orgrimmar"
 mock.fire("ZONE_CHANGED_NEW_AREA")
 SlashCmdList.SOCIALDIARY("sightings")
 SlashCmdList.SOCIALDIARY("sightings scan")
 Eq(Capture.QueueLength(), 0, "/sd sightings scan queued in a city")
 SlashCmdList.SOCIALDIARY("sightings city remove")
-Eq(ns.db.settings.cities[1454], false, "/sd sightings city remove, standing in it")
+Eq(ns.db.settings.cities["Orgrimmar"], false, "/sd sightings city remove, standing in it")
 Eq((Capture.State()), "active", "removing the current city did not resume")
 SlashCmdList.SOCIALDIARY("sightings city add")
 Eq((Capture.State()), "city", "adding the current city did not pause")
@@ -440,7 +441,7 @@ Section("sighting throttle bookkeeping (SIG-8)")
 local ROAMER = F.Player{ guid = "Player-4620-00EEEE04", "Roam", "Er", level = 12 }
 
 mock.mapID, mock.zone, mock.inInstance, mock.pvpType = 1412, "Mulgore", false, nil
-ns.db.settings.cities[1454] = true
+ns.db.settings.cities["Orgrimmar"] = true
 Eq((Capture.Evaluate()), "active", "setup: not listening")
 while Capture.QueueLength() > 0 do Drain() end
 

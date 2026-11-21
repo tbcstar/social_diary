@@ -133,6 +133,12 @@ after Core/Addon.lua, before Locales/. Every definition is guarded with
 - C_Map.GetMapInfo answers only what the client can describe. SetMapByID does
   not fail on a bad id (it keeps the current view), so an id that leaves the
   view where it was is reported as nil, not as the player's zone.
+- SetMapByID takes a WorldMapArea.dbc id, and GetCurrentMapAreaID answers one
+  past it: the client's own FrameXML subtracts one before every SetMapByID.
+  So the ids this addon stores (all from GetBestMapForUnit, which is
+  GetCurrentMapAreaID) are one past what MapInfo has to ask for, and MapInfo
+  asks for mapID - 1 and accepts only that id back (21 Nov 2026: the city
+  list showed "map 1453" and a stale read-back hid the offset).
 - parentMapID is nil: this client's zone list is flat and carries no parent
   links, and guessing one from the continent would invent a tree. Code that
   needs to climb (ns.City, ns.ZoneOf) already handles a nil parent.

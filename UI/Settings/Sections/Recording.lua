@@ -65,7 +65,8 @@ local function BuildRecording(pane, c)
     -- this build, and a saved city key must never be turned over).
     for _, city in ipairs(cities) do
         city.shown = type(city.key) == "number"
-            and (ns.MapNameShown(city.key) or Fmt(L["map %s"], city.key)) or city.key
+            and (ns.MapNameShown(city.key) or Fmt(L["map %s"], city.key))
+            or ns.ZoneShown(city.key)
     end
     table.sort(cities, function(a, b) return a.shown < b.shown end)
 

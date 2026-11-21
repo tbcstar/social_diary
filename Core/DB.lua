@@ -26,7 +26,7 @@ local addonName, ns = ...
 -- step in its list below.
 local SCHEMA_VERSION = 5     -- a diary
 local ACCOUNT_SCHEMA = 2     -- SocialDiaryDB, apart from the shared diary
-local CHARACTER_SCHEMA = 2   -- SocialDiaryCharDB, apart from its own diary
+local CHARACTER_SCHEMA = 3   -- SocialDiaryCharDB, apart from its own diary
 
 -- One diary: everything recorded about other players, and the roads of the
 -- characters who write into it. Each record notes which of the user's
@@ -195,16 +195,18 @@ local CHARACTER_SETTINGS = {
     keepRoute = true,   -- JRN-17: Your Diary keeps the character's own route
     peopleSort = "lastMet",  -- the People list's sort, a preference (People.SORTS)
 
-    -- SIG-5: where passive detection pauses. Map ids (Classic's capital
-    -- maps) and, as a fallback, zone names. A removed default is stored
-    -- as false rather than nil, or the defaults would bring it back.
+    -- SIG-5: where passive detection pauses. Zone names, as the client's
+    -- own GetRealZoneText answers them, so the settings page can name a city
+    -- and the name table translates it where it is drawn. A map id still
+    -- works for a city added by command. A removed default is stored as false
+    -- rather than nil, or the defaults would bring it back.
     cities = {
-        [1453] = true,  -- Stormwind City
-        [1454] = true,  -- Orgrimmar
-        [1455] = true,  -- Ironforge
-        [1456] = true,  -- Thunder Bluff
-        [1457] = true,  -- Darnassus
-        [1458] = true,  -- Undercity
+        ["Stormwind City"] = true,
+        ["Orgrimmar"] = true,
+        ["Ironforge"] = true,
+        ["Thunder Bluff"] = true,
+        ["Darnassus"] = true,
+        ["Undercity"] = true,
     },
 }
 
@@ -254,6 +256,34 @@ end
 -- (Core/Sessions.lua), so its saved value goes.
 STEPS.character[2] = function(t)
     if type(t.settings) == "table" then t.settings.sessionGapMinutes = nil end
+end
+
+-- The city list shipped with map ids from the retail build these came from
+-- (1453 Stormwind City, 1454 Orgrimmar, 1455 Ironforge, 1456 Thunder Bluff,
+-- 1457 Darnassus, 1458 Undercity). This client cannot name those ids, so the
+-- settings page had nothing to draw but "map 1453". Zone names are what the
+-- client itself answers in those cities, and the name table translates them.
+-- A city the user switched off stays off: it is false, not nil, and the
+-- defaults only fill nil.
+local OLD_CITIES = {
+    [1453] = "Stormwind City",
+    [1454] = "Orgrimmar",
+    [1455] = "Ironforge",
+    [1456] = "Thunder Bluff",
+    [1457] = "Darnassus",
+    [1458] = "Undercity",
+}
+STEPS.character[3] = function(t)
+    local settings = t.settings
+    if type(settings) ~= "table" or type(settings.cities) ~= "table" then return end
+    local cities = settings.cities
+    for id, name in pairs(OLD_CITIES) do
+        local on = cities[id]
+        if on ~= nil then
+            cities[id] = nil
+            cities[name] = on
+        end
+    end
 end
 
 -- Oldest first, bumping `schema` after each step, so a table that skipped

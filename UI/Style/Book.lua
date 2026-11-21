@@ -558,7 +558,7 @@ local function BookShade(d)
 end
 
 -- `cover` is how far the cover reaches past the pages.
-function Style.BookRibbon(book, x, width, cover, colour, label, onClick, splay)
+function Style.BookRibbon(book, x, width, cover, colour, label, onClick)
     local cloth = Style.RIBBONS[colour] or Style.RIBBONS.red
     local edge = RIBBON_TUCK + cover  -- where it goes over the cover's edge
 
@@ -611,34 +611,6 @@ function Style.BookRibbon(book, x, width, cover, colour, label, onClick, splay)
 
     ribbon.tipShadow = Texture("BACKGROUND", 0)
     ribbon.tip = Texture("ARTWORK", 0)
-
-    -- Its name, written on a paper tag lifted off the ribbon: cloth 22 pixels
-    -- wide cannot set a word down itself, and the tooltip is not there until
-    -- the pointer is (the player, 19 Nov 2026: four colour blocks whose names
-    -- only a hover shows). Ribbons are 30 apart and the tags are wider, so
-    -- they lift in two rows, every other ribbon, and stay clear of one another.
-    -- They sit above the ribbon, over the cover's bottom edge: below it is the
-    -- bottom of the screen.
-    local tag, tagText
-    if label then
-        local INK, P = Style.INK, Style.PAPER
-        tag = CreateFrame("Button", nil, ribbon)
-        tag:SetHeight(18)
-        local edge = tag:CreateTexture(nil, "ARTWORK", nil, 0)
-        edge:SetAllPoints()
-        edge:SetColorTexture(INK[1], INK[2], INK[3], 0.7)
-        local paper = tag:CreateTexture(nil, "ARTWORK", nil, 1)
-        paper:SetPoint("TOPLEFT", 1, -1)
-        paper:SetPoint("BOTTOMRIGHT", -1, 1)
-        paper:SetColorTexture(P[1], P[2], P[3], 1)
-        tagText = Style.Text(tag, Style.FONT.tag)
-        tagText:SetPoint("CENTER")
-        tagText:SetTextColor(INK[1], INK[2], INK[3], 1)
-        tagText:SetText(label)
-        tag:SetWidth(math.max(34, tagText:GetStringWidth() + 14))
-        tag:SetPoint("BOTTOM", ribbon, "TOP", 0, ((splay or 0) % 2 == 1) and 26 or 4)
-        ribbon.tag = tag
-    end
 
     local count, tipLight = 0, 1
 
@@ -742,28 +714,10 @@ function Style.BookRibbon(book, x, width, cover, colour, label, onClick, splay)
         Dye(ribbon.tip, c, dim * tipLight)
     end
 
-    -- The tag is a way into the ribbon too: it lights it, turns the page.
-    if tag then
-        tag:SetScript("OnEnter", function()
-            hovered = true
-            Paint()
-            tag:SetAlpha(1)
-        end)
-        tag:SetScript("OnLeave", function()
-            hovered = false
-            Paint()
-            tag:SetAlpha(ribbon.active and 1 or 0.85)
-        end)
-        tag:SetScript("OnClick", function()
-            if onClick then onClick(ribbon) end
-        end)
-    end
-
     function ribbon:SetActive(active)
         self.active = active and true or false
         Layout()
         Paint()
-        if tag then tag:SetAlpha(self.active and 1 or 0.85) end
     end
 
     Style.Tooltip(ribbon, function(self) return { { self.label, 1, 1, 1 } } end, "ANCHOR_BOTTOM",

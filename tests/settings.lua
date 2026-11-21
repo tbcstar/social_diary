@@ -906,20 +906,20 @@ Check(P.detectSightings and P.detectSightings:GetChecked(), "no sightings switch
 P.detectSightings:Click()
 Eq(ns.db.settings.detectSightings, false, "the sightings switch did not write through")
 Eq((Capture.Evaluate()), "off", "switching sightings off did not stop the capture")
-local stormwind = P.cities[1453]
+local stormwind = P.cities["Stormwind City"]
 Check(stormwind and stormwind.unavailable, "the cities stay available with sightings off")
 P.detectSightings:Click()
 Eq(ns.db.settings.detectSightings, true, "the sightings switch did not switch back on")
 Check(not stormwind.unavailable, "the cities did not come back with sightings")
 
-Eq(stormwind.label:GetText(), ns.MapName(1453) or "map 1453", "a city box is not named after its map")
+Eq(stormwind.label:GetText(), ns.ZoneShown("Stormwind City"), "a city box is not named after its zone")
 -- Ticked is noticing people there; the defaults pause, so they start unticked.
 Eq(stormwind:GetChecked(), false, "a city it pauses in shows ticked")
 stormwind:Click()
-Eq(ns.db.settings.cities[1453], false, "ticking a city did not stop the pause there")
+Eq(ns.db.settings.cities["Stormwind City"], false, "ticking a city did not stop the pause there")
 Eq(stormwind:GetChecked(), true, "the city did not tick")
 stormwind:Click()
-Eq(ns.db.settings.cities[1453], true, "unticking a city did not pause there again")
+Eq(ns.db.settings.cities["Stormwind City"], true, "unticking a city did not pause there again")
 local n = 0
 for _ in pairs(P.cities) do n = n + 1 end
 Eq(n, #Capture.Cities(), "not every city on the list has a box")

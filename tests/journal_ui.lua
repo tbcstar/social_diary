@@ -148,37 +148,6 @@ Check(ns.UI.NearbyPage.dayCount:GetText():find("days?$"), "Recently nearby day c
     .. tostring(ns.UI.NearbyPage.dayCount:GetText()))
 Eq(ns.UI.JournalView(), "nearby", "view not kept")
 
--- Each ribbon carries its page on a paper tag lifted off it: the cloth is 22
--- pixels wide and cannot set a word down, and a tooltip is not there until
--- the pointer is (the player, 19 Nov 2026: four blocks whose names only a
--- hover showed). They lift in two rows, so neighbours do not overlap.
-Section("the ribbons' names, written on a tag")
-
-local function TagText(tag)
-    for _, frame in ipairs(mock.frames) do
-        local text = frame.parent == tag and frame.GetText and frame:GetText()
-        if type(text) == "string" and text ~= "" then return text end
-    end
-end
-
-for _, one in ipairs({ { "journey", "Your Diary", 26 }, { "people", "People", 4 },
-    { "nearby", "Recently nearby", 26 }, { "settings", "Settings", 4 } }) do
-    local key, label, row = one[1], one[2], one[3]
-    local ribbon, tag = J.ribbons[key], J.ribbons[key].tag
-    Check(tag, "the " .. key .. " ribbon carries no tag")
-    Eq(TagText(tag), label, "the " .. key .. " tag's words")
-    Check(tag:GetWidth() >= 34, "the " .. key .. " tag is narrower than its words")
-    Eq(tag.recorded.points[1].args[4], row, "the " .. key .. " tag does not lift clear of its neighbours")
-end
-
--- The tag is a way into the ribbon too.
-J.ribbons.settings.tag:Click()
-Check(J.views.settings:IsShown() and J.ribbons.settings.active, "the settings tag did not turn the page")
-J.ribbons.people.tag:Click()
-Check(J.views.people:IsShown() and J.ribbons.people.active, "the people tag did not turn it back")
-J.ribbons.nearby.tag:Click()
-Check(J.views.nearby:IsShown(), "the nearby tag did not turn the page")
-
 -- The page stays open across a close; opening on a person goes to People.
 ns.UI.CloseJournal()
 ns.UI.ShowJournal()

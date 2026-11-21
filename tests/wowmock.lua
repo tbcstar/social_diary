@@ -816,11 +816,15 @@ function M.MoveTo(mapID, position)
     M.AnnounceArea()
 end
 
--- Select a map by area id: the zone it belongs to, or the continent. An id
--- the zone list does not hold but M.mapNames names (a test's own map, 9001
--- and the like) is added to the list the way the client's own zone table
--- would describe it, so a name can be read back for it.
-_G.SetMapByID = function(areaID)
+-- Select a map by the id the client's SetMapByID takes: a WorldMapArea id,
+-- one less than the area id GetCurrentMapAreaID reports for the same map
+-- (the client's own FrameXML writes SetMapByID(mapID - 1)). The ids this
+-- file holds are the reported ones, so the argument is stepped back up here:
+-- a zone, a continent, or an id only M.mapNames names (a test's own map,
+-- 9001 and the like, which joins the zone list the way the client's own
+-- zone table would describe it, so a name can be read back for it).
+_G.SetMapByID = function(dbcID)
+    local areaID = dbcID and (dbcID + 1)
     local function choose()
     if not areaID then return end
     for continent, zones in pairs(M.mapZones) do
@@ -879,7 +883,7 @@ _G.SetMapToCurrentZone = function()
         end
         -- A sub-map (a cave, a building) has its own area id in the client's
         -- map table: the client selects it and reports that id back.
-        if M.mapNames[M.mapID] then SetMapByID(M.mapID) return end
+        if M.mapNames[M.mapID] then SetMapByID(M.mapID - 1) return end
     end
     -- An id the client cannot describe: no map is up at all.
     M.mapContinent, M.mapZone = 0, 0

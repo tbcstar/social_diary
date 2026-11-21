@@ -103,12 +103,14 @@ do
 
         local viewContinent, viewZone = SaveView()
         -- SetMapByID does not fail on an id the client cannot describe: it
-        -- silently keeps the current view. Remember where the view was, so a
-        -- read-back that never moved can be told apart from a real answer.
-        local baseArea = GetCurrentMapAreaID()
+        -- silently keeps the current view, so the read-back has to be checked.
+        -- It takes the WorldMapArea.dbc id, and GetCurrentMapAreaID answers
+        -- one past that (the client's FrameXML subtracts one before every
+        -- SetMapByID), so the ids read from the client are one past the
+        -- ids it is asked for here.
         local areaID, continent, zone, ok
         if SetMapByID then
-            ok = pcall(SetMapByID, mapID)
+            ok = pcall(SetMapByID, mapID - 1)
             if ok then
                 areaID = GetCurrentMapAreaID()
                 continent = GetCurrentMapContinent()
@@ -118,9 +120,11 @@ do
         RestoreView(viewContinent, viewZone)
 
         if not ok or type(areaID) ~= "number" or areaID <= 0 then return nil end
-        -- The client never moved: this id is one it cannot describe, which is
-        -- retail's nil, never a stand-in for the player's own zone.
-        if areaID ~= mapID and areaID == baseArea then return nil end
+        -- The answer has to be the map asked for. An id the client cannot
+        -- describe leaves the view where it was, which reads back as some
+        -- other map (often the player's own zone): retail's nil, never a
+        -- stand-in for whatever the view happened to be.
+        if areaID ~= mapID then return nil end
 
         local mapType = 1
         if type(zone) == "number" and zone > 0 then
