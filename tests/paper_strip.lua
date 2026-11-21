@@ -220,3 +220,41 @@ Eq(asked[4] .. "," .. asked[5], tx .. "," .. ty, "nearest is not given the slip'
 Eq(nx .. "," .. ny, (tx + 1) .. "," .. (ty - 1), "nearest's answer is not the strip's")
 -- And a card with no nearest, no draw, no plan lies as a person's strip.
 Eq(lone.box[3] .. "x" .. lone.box[4], twin.box[3] .. "x" .. twin.box[4], "a card of no hooks lies otherwise")
+------------------------------------------------------------------------
+Section("a language that puts no spaces between its words")
+
+-- Chinese and Japanese are written without spaces: the wrapper's pattern
+-- reads a whole sentence as one word, so it has to break between the
+-- characters, or the words run out of the slip and across the page
+-- (21 Nov 2026: the tour's third step did exactly that).
+local ZN = "与你互动过的每位玩家，都会被自动记录下来，比如布拉姆和塞克斯，30天之后对方的数据会被删除。"
+local slip = ns.UI.PaperStrip(host)
+slip:SetNote({ name = "Who you met", what = ZN, lines = 8, seed = "zh:1" })
+local zw, zh = slip:Layout(20, 300, 200)
+local done = slip:WhatLines()
+local inner = 200 - STRIP.pad[1] - STRIP.pad[3]
+Check(#done > 1, "a sentence with no spaces is not broken into lines")
+for i = 1, #done do
+    Check(done[i]:GetStringWidth() <= inner, "a line runs out of the slip's paper: " .. i .. ": " .. done[i]:GetText())
+end
+Check(zw <= 200, "the slip is wider than it was laid at")
+Check(zh > 0, "the slip has no height")
+
+-- A word of Roman letters is left whole: one too wide for a line is the
+-- quote's to cut, and what happened has always run on (Said, and its own
+-- test) rather than being broken in the middle.
+local latin = ns.UI.PaperStrip(host)
+latin:SetNote({ name = "Long", what = ("x"):rep(100), lines = 40, seed = "long:1" })
+latin:Layout(20, 300, 200)
+Check(#latin:WhatLines() == 1, "a word of letters is broken in the middle")
+
+-- Their note quoted in the same language: broken between characters too,
+-- and past its lines cut with the ellipsis inside the closing quote as
+-- any other.
+local q = ns.UI.PaperStrip(host)
+q:SetNote({ name = "Quote", what = "x", quote = ZN .. ZN, seed = "zh:quote" })
+q:Layout(20, 300, 200)
+Check(q.quoteLines >= 1 and q.quoteLines <= STRIP.quote.lines, "a quoted sentence kept no lines")
+for i = 1, q.quoteLines do
+    Check(q.said[i]:GetStringWidth() <= inner, "a quoted line of Chinese runs out of the slip: " .. i)
+end

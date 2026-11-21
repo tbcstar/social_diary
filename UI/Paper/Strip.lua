@@ -441,9 +441,38 @@ function ns.UI.PaperStrip(parent, card)
         return Width(font)
     end
 
+    -- One UTF-8 character (Lua 5.1 has no pattern that counts them whole).
+    local CHAR = "[%z\1-\127\194-\255][\128-\191]*"
+
+    -- A character from U+3000 up: Chinese, Japanese, Korean and the wide
+    -- forms (a no-break space, U+00A0, stays out of it).
+    local WIDE = "[\227-\239][\128-\191]"
+
+    -- `word` cut to fit a line, between characters: Chinese and Japanese put
+    -- no spaces between their words, so a whole sentence is one "word" to
+    -- the pattern below and has to be broken where it stands (21 Nov 2026,
+    -- the tour's step 3 ran off its slip). The piece that fits and what is
+    -- left, or nothing where one character alone is already too wide.
+    --
+    -- A word of Roman letters is left whole: one too wide for a line is the
+    -- quote's to cut and end with its ellipsis (Said), not the wrapper's to
+    -- break in the middle.
+    local function Break(word, width, font)
+        if not word:find(WIDE) then return nil end
+        local piece = ""
+        for char in word:gmatch(CHAR) do
+            if piece ~= "" and Measure(font, piece .. char) > width then
+                return piece, word:sub(#piece + 1)
+            end
+            piece = piece .. char
+        end
+        return nil
+    end
+
     -- `text` broken into lines no wider than `width` in `font` (FONT.small,
     -- the probe, unless said), its own spacing kept within a line (a wide
-    -- space the words hold).
+    -- space the words hold), and a word of Chinese or Japanese, too wide for
+    -- a line, broken between its characters.
     local function Wrap(text, width, font)
         font = font or probe
         local lines, line, space = {}, "", ""
@@ -455,6 +484,12 @@ function ns.UI.PaperStrip(parent, card)
             else
                 line = try
             end
+            while Measure(font, line) > width do
+                local head, rest = Break(line, width, font)
+                if not head then break end
+                lines[#lines + 1] = head
+                line = rest
+            end
             space = after ~= "" and after or " "
         end
         if line ~= "" then lines[#lines + 1] = line end
@@ -462,8 +497,12 @@ function ns.UI.PaperStrip(parent, card)
     end
 
     -- Whether a line is one word alone (a time held by no-break spaces,
-    -- "3 h 20 min", is one word).
-    local function Alone(line) return line ~= nil and not line:find("%s") end
+    -- "3 h 20 min", is one word). A line of Chinese or Japanese has no
+    -- spaces either, but is not a word that could be moved down: balancing
+    -- is for words, and there the wrapper breaks between characters.
+    local function Alone(line)
+        return line ~= nil and not line:find("%s") and not line:find(WIDE)
+    end
 
     -- `text` wrapped to `width` in balanced lines (STRIP.balance): where the
     -- last line would be one word alone, wrapped again narrower until it is
